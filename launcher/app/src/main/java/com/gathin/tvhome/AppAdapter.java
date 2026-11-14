@@ -100,6 +100,8 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     static final float FOCUS_SCALE = 1.10f;
     /** dock_tight: a gentler zoom on the focused tile (and on the picture inside it); 0 keeps the usual 1.10 and 1.12. */
     static float zoomOverride = 0f;
+    /** Config.calmTiles: tiles that are not focused are a little dimmer and less saturated, so the picture behind Home leads. */
+    static boolean calmTiles;
     static float bannerZoom() {
         return zoomOverride > 0f ? 1f + (zoomOverride - 1f) / 3f : 1.035f;
     }
@@ -257,6 +259,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         this.uniformTiles = cfg.uniformTiles;
         this.hideNames = cfg.hideTileNames;
         zoomOverride = cfg.dockTight ? 1.04f : 0f;
+        calmTiles = cfg.calmTiles;
         // Tiles keep their identity across reload(), so a focused tile stays on its app instead of
         // its view being rebound to whatever app now sits in that slot.
         setHasStableIds(true);
@@ -521,6 +524,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             h.label.setText(e.label);
             h.label.setVisibility(uniformTiles || hideNames ? View.GONE : View.VISIBLE);
         }
+        h.calm(focused, false);
         h.card.setOnClickListener(v -> launch(e, v));
         h.card.setOnLongClickListener(v -> {
             if (tileMenu) {
@@ -938,6 +942,42 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         final boolean overshoot;
         /** A dock tile: it grows in place without advanced_effects' lift, which reads as off-centre in the band (#2135). */
         boolean inDock;
+        /** How calmed the tile is now: 1 at rest, 0 under focus (calm_tiles). */
+        private float calmAt = -1f;
+        private android.animation.ValueAnimator calmAnim;
+
+        /** calm_tiles: the tile comes up to its full colour under focus and settles back when focus leaves. */
+        void calm(boolean focused, boolean animate) {
+            if (!calmTiles) return;
+            float to = focused ? 0f : 1f;
+            if (calmAnim != null) calmAnim.cancel();
+            if (!animate || !animations || reducedMotion || calmAt < 0f) {
+                setCalm(to);
+                return;
+            }
+            calmAnim = android.animation.ValueAnimator.ofFloat(calmAt, to);
+            calmAnim.setDuration(Motion.STANDARD);
+            calmAnim.addUpdateListener(a -> setCalm((float) a.getAnimatedValue()));
+            calmAnim.start();
+        }
+
+        private void setCalm(float t) {
+            calmAt = t;
+            if (t < 0.01f) {
+                banner.clearColorFilter();
+                icon.clearColorFilter();
+                return;
+            }
+            android.graphics.ColorMatrix m = new android.graphics.ColorMatrix();
+            m.setSaturation(1f - 0.3f * t);
+            float b = 1f - 0.2f * t;
+            android.graphics.ColorMatrix dim = new android.graphics.ColorMatrix();
+            dim.setScale(b, b, b, 1f);
+            m.postConcat(dim);
+            android.graphics.ColorMatrixColorFilter filter = new android.graphics.ColorMatrixColorFilter(m);
+            banner.setColorFilter(filter);
+            icon.setColorFilter(filter);
+        }
 
         Holder(View v, TileListener listener, boolean animations, boolean advancedEffects,
                boolean reducedMotion, float restNameAlpha, boolean overshoot) {
@@ -988,6 +1028,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 view.animate().cancel();
                 banner.animate().cancel();
                 name.animate().cancel();
+                calm(focused, true);
                 float scale = !animations ? 1f : zoomOverride > 0f ? zoomOverride : advancedEffects ? 1.12f : 1.10f;
                 float s = focused ? scale : 1f;
                 if (!animations) {

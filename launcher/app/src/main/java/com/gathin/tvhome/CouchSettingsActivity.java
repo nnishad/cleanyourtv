@@ -45,10 +45,11 @@ public final class CouchSettingsActivity extends Activity {
             R.drawable.ic_settings_about};
     private static final int PAGE_NONE = 0, PAGE_BACKGROUNDS = 1, PAGE_WALLPAPER = 2, PAGE_OPEN_ON_START = 3;
     private static final String[] SCENE_IDS = {"", "random", "golden", "water", "fog", "dawn", "valley", "bridge",
-            "alpine", "ember", "highland", "lake", "snow", "city"};
+            "alpine", "ember", "highland", "lake", "snow", "city", "stars", "aurora", "tarn", "oldtown"};
     private static final int[] SCENE_NAMES = {R.string.hs_scene_time, R.string.hs_scene_random, R.string.hs_scene_golden, R.string.hs_scene_water, R.string.hs_scene_fog, R.string.hs_scene_dawn,
             R.string.hs_scene_valley, R.string.hs_scene_bridge, R.string.hs_scene_alpine, R.string.hs_scene_ember,
-            R.string.hs_scene_highland, R.string.hs_scene_lake, R.string.hs_scene_snow, R.string.hs_scene_city};
+            R.string.hs_scene_highland, R.string.hs_scene_lake, R.string.hs_scene_snow, R.string.hs_scene_city,
+            R.string.hs_scene_stars, R.string.hs_scene_aurora, R.string.hs_scene_tarn, R.string.hs_scene_oldtown};
     private static final String[] CLOCK_IDS = {"system", "12", "24"};
     private static final int[] CLOCK_NAMES = {R.string.hs_clock_tv, R.string.hs_clock_12, R.string.hs_clock_24};
     private static final int[] HIDE_SECONDS = {0, 30, 60, 120, 300};
@@ -60,7 +61,7 @@ public final class CouchSettingsActivity extends Activity {
             R.string.hs_part_night, R.string.hs_part_fog};
     /** Everything this screen can set; Reset takes all of it back to what the theme says. */
     private static final String[] OWN_KEYS = {"scenes", "scene", "scenes_off", "watch_row", "hide_rows_idle_seconds",
-            "home_idle_clock_minutes", "show_weather", "hide_tile_names", "columns", Config.ROWS_BELOW_DOCK_KEY,
+            "home_idle_clock_minutes", "show_weather", "hide_tile_names", "calm_tiles", "columns", Config.ROWS_BELOW_DOCK_KEY,
             "animations", "advanced_effects", Config.WALLPAPER_CHOICE_KEY, Config.DOCK_OPACITY_KEY,
             Config.CLOCK_FORMAT_KEY, OpenOnStart.KEY};
 
@@ -291,6 +292,8 @@ public final class CouchSettingsActivity extends Activity {
         }
         toggle(R.string.hs_app_names, getString(R.string.hs_app_names_note), !config.hideTileNames,
                 v -> choices.edit().putBoolean("hide_tile_names", !v).apply());
+        toggle(R.string.hs_calm, getString(R.string.hs_calm_note), config.calmTiles,
+                v -> choices.edit().putBoolean("calm_tiles", v).apply());
         int clock = 0;
         for (int i = 0; i < CLOCK_IDS.length; i++) if (CLOCK_IDS[i].equals(config.clockFormat)) clock = i;
         step(R.string.hs_clock, null, strings(CLOCK_NAMES), clock,

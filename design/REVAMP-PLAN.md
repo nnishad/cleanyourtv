@@ -281,3 +281,18 @@ The polish pass, from an audit of every screen:
 
 Checked on the emulator with screen recordings (scene step, minute change, cold start) and screenshots of every
 screen. Not measured on the TV: items 7 to 9 add animation and a full-screen copy, and need the phase 6 numbers.
+
+## 9. Night scenes and a calmer Home (2026-11-14, emulator only)
+
+| Change | Detail |
+|---|---|
+| Four night scenes | `stars` Starlit peaks, `aurora` Northern lights (no cut-out), `tarn` Lakeside stars, `oldtown` Old town lights. They are the 19 to 5 set; Ember ridges is morning only again and City at dusk evening only. Photos from Wikimedia Commons featured pictures, credited in `launcher/SCENES-CREDITS.md` (CC BY 4.0, CC0 and two CC BY-SA 4.0). Old town's digits are frosted (40% white, firmer rim): plain glass vanished over the lit walls |
+| Calm app tiles | `calm_tiles` (theme key, and Look and scenes > Calm app tiles): tiles that are not focused are 20% dimmer and 30% less saturated; the focused one comes up to full colour over 200 ms |
+| Rows put away when idle | The local theme sets `hide_rows_idle_seconds` to 60. With the rows away the scene turns to another of the scenes for now every 4 minutes (`SceneView.next`), dissolving; any key brings the rows back and is not acted on |
+| Shorter date line | "Sat 14 Nov · [icon] 23° Clear": short day and month, no place name, and a small picture for the weather (`ic_wx_*`: sun, moon, cloud, fog, rain, snow, storm) |
+| Remove from Keep watching | Hold OK on a card. Only the app that owns a Watch Next entry can delete it, so the launcher keeps its own list (`keep_watching_hidden`: row id and when it was last watched); the show comes back when it is watched again |
+
+16 scenes now; the APK is 29.6 MB. Checked on the emulator with screenshots (each night scene, hide after idle,
+scene turning with the timings shortened for the test, wake on a key, removing a card). Someone else was
+pressing keys on the emulator during two of the idle runs, which were repeated.
+

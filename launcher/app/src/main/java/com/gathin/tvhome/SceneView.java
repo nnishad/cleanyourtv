@@ -108,6 +108,17 @@ final class SceneView extends View {
             scene("snow", 170, 440, 1f, BRIGHT_SKY),
             // City at dusk: the towers rise into the digits
             scene("city", 230, 380, 1f, null),
+            // The night scenes. Starlit peaks: the Milky Way over a snowy range, whose summits rise into the digits
+            scene("stars", 240, 440, 1.25f, null),
+            // Northern lights: the clock stands in the aurora, clear of the rocks; no cut-out
+            new Spec("aurora", false, 150, 440, -1, 1.1f, 1f, 1f, 1f, WHITE_RIM, WHITE_FILL, true, null, null, true),
+            // Lakeside stars: a tarn under the Milky Way; the hills at both sides cross the ends of the clock
+            scene("tarn", 180, 440, 1.2f, null),
+            // Old town lights: a lit castle hotel at dusk, its roofs and towers rising into the digits. The digits stand
+            // over lit walls, where plain glass (the picture, blurred) vanishes: theirs is frosted, with a good part of
+            // white in it and a firmer rim. The pale dusk sky gets the top shade.
+            new Spec("oldtown", true, 150, 440, -1, 1.15f, 0.8f, 1f, 1f, 0xD9FFFFFF, 0x73FFFFFF, true, BRIGHT_SKY,
+                    new float[]{0f, 0.3f}, true),
     };
 
     private static Spec scene(String id, float top, float size, float fillBright, int[] shade) {
@@ -117,10 +128,10 @@ final class SceneView extends View {
 
     /** Scenes for each part of the day; following the time shows one of them, and keeps it until the part changes. */
     private static final String[][] BY_TIME = {
-            {"dawn", "ember"},                                                  // 5 to 9
+            {"dawn", "ember"},                                                  // 5 to 9: Ember ridges is a sunrise
             {"water", "alpine", "lake", "highland", "snow", "bridge"},          // 9 to 16
             {"golden", "city"},                                                 // 16 to 19
-            {"city", "ember"},                                                  // 19 to 5: the two darkest
+            {"stars", "aurora", "tarn", "oldtown"},                             // 19 to 5
             {"fog", "valley"},                                                  // fog or mist reported
     };
 
@@ -168,6 +179,7 @@ final class SceneView extends View {
     private boolean loading, released;
     private int shadeFor = -1, scrimFor = -1;
     private String time = "", date = "", weather = "";
+    private android.graphics.drawable.Drawable weatherIcon;
     /** The minute before, while its digits dissolve into the new ones (clockFade 0 to 1); null otherwise. */
     private String prevTime;
     private float clockFade = 1f;
@@ -341,10 +353,35 @@ final class SceneView extends View {
         return new ColorMatrixColorFilter(cm);
     }
 
-    /** The weather line under the date ("Vilnius · 30°C · Sunny"); empty hides it. */
-    void setWeather(String line) {
+    /** The weather beside the date ("30° Sunny") and its small picture (0: none); an empty line hides both. */
+    void setWeather(String line, int iconRes) {
         weather = line == null ? "" : line;
+        weatherIcon = null;
+        if (iconRes != 0 && !weather.isEmpty()) {
+            try {
+                weatherIcon = getContext().getDrawable(iconRes);
+                if (weatherIcon != null) weatherIcon.setTint(0xEBFFFFFF);
+            } catch (RuntimeException ignored) {
+            }
+        }
         invalidate();
+    }
+
+    /**
+     * Home sits idle with its rows put away: another of the scenes for now dissolves in, so the picture is never still
+     * for long (kinder to the panel too). A pinned scene stays.
+     */
+    void next() {
+        boolean random = "random".equalsIgnoreCase(wanted);
+        if ((!wanted.isEmpty() && !random) || photo == null || loading) return;
+        java.util.List<String> pool = random ? enabled(off) : poolNow(getContext(), off);
+        if (pool.size() < 2) return;
+        String id = another(pool, spec.id);
+        cover(snapshot());
+        spec = spec(id);
+        applySpec();
+        release();
+        ensureLoaded();
     }
 
     private final Runnable minute = this::refresh;
@@ -352,7 +389,7 @@ final class SceneView extends View {
     /** Time and date again, then once more on the next minute change, until pause(). */
     void refresh() {
         String now = DateTimeFormatter.ofPattern(is24 ? "HH:mm" : "h:mm").format(LocalTime.now());
-        date = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.getDefault()).format(LocalDate.now());
+        date = DateTimeFormatter.ofPattern("EEE d MMM", Locale.getDefault()).format(LocalDate.now());
         // The minute turned while Home sat still: the old digits dissolve into the new. With someone moving about
         // the digits just change, so the dissolve's redraws never land on a focus move.
         boolean dissolve = animated && photo != null && !time.isEmpty() && !now.equals(time) && isShown()
@@ -617,17 +654,27 @@ final class SceneView extends View {
     }
 
     private void drawCaption(Canvas c, float s) {
-        String line = weather.isEmpty() ? date : date + "   ·   " + weather;
+        // "Sat 14 Nov   ·   [sun] 23° Clear": the date, then the weather's small picture and its short line.
+        String first = weather.isEmpty() ? date : date + "   \u00B7   ";
         caption.setTextSize(31 * s);
         caption.setShadowLayer(8 * s, 0, 2 * s, 0xB3000000);
+        caption.setTextAlign(Paint.Align.LEFT);
         float base = (spec.top - 12) * s;   // just above the digits, whatever height the scene puts them at
-        if (spec.left < 0) {
-            caption.setTextAlign(Paint.Align.CENTER);
-            c.drawText(line, getWidth() / 2f, base, caption);
-        } else {   // a clock set to one side: the line starts where its digits do
-            caption.setTextAlign(Paint.Align.LEFT);
-            c.drawText(line, spec.left * s, base, caption);
+        float icon = weatherIcon != null ? 30 * s : 0f, gap = weatherIcon != null ? 9 * s : 0f;
+        float firstW = caption.measureText(first);
+        float total = firstW + (weather.isEmpty() ? 0f : icon + gap + caption.measureText(weather));
+        // Centred over a centred clock; with a clock set to one side the line starts where its digits do.
+        float x = spec.left < 0 ? (getWidth() - total) / 2f : spec.left * s;
+        c.drawText(first, x, base, caption);
+        if (weather.isEmpty()) return;
+        x += firstW;
+        if (weatherIcon != null) {
+            int top = Math.round(base - icon * 0.84f);
+            weatherIcon.setBounds(Math.round(x), top, Math.round(x + icon), Math.round(top + icon));
+            weatherIcon.draw(c);
+            x += icon + gap;
         }
+        c.drawText(weather, x, base, caption);
     }
 
     private void drawClock(Canvas c, int w, int h, float s, String time) {

@@ -746,6 +746,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                             showContext(context);
                         }
 
+                        @Override
+                        public void onCardMenu(View card, Runnable remove) {
+                            showCardMenu(card, remove);
+                        }
+
                     });
         }
         // The scene's accent tints the Keep watching progress bars; it arrives once the photo is decoded.
@@ -1491,7 +1496,21 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         hideGlass();
         rowsWrap.animate().alpha(0f).setDuration(500).start();
         topButtonsView.animate().alpha(0f).setDuration(500).start();
+        if (contextLine != null) showContext("");
+        root.removeCallbacks(turnScene);
+        root.postDelayed(turnScene, SCENE_TURN_MS);
     }
+
+    /** With the rows put away and Home left alone, the scene changes for another every few minutes. */
+    private static final long SCENE_TURN_MS = 4 * 60_000L;
+    private final Runnable turnScene = new Runnable() {
+        @Override
+        public void run() {
+            if (!rowsHidden || !resumed || sceneView == null) return;
+            sceneView.next();
+            root.postDelayed(this, SCENE_TURN_MS);
+        }
+    };
 
     private TextView hintPill;
     private final Runnable hideHint = () -> {
@@ -1705,6 +1724,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     private void showRows() {
         rowsHidden = false;
+        root.removeCallbacks(turnScene);
         rowsWrap.animate().alpha(1f).setDuration(150).start();
         topButtonsView.animate().alpha(1f).setDuration(150).start();
         View focused = getCurrentFocus();
@@ -1728,6 +1748,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         cancelHoldOk();
         root.removeCallbacks(showIdleClock);
         root.removeCallbacks(hideRows);
+        root.removeCallbacks(turnScene);
         root.removeCallbacks(idleDim);
         if (idleDimmed) idleUndim();
         if (rowsHidden) {   // leaving Home: it comes back with its rows
@@ -2721,7 +2742,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private void showWeather(Weather.Reading r) {
         if (r == null || weather == null) return;
         if (sceneView != null) {
-            sceneView.setWeather(Weather.line(weatherPlace, r));
+            sceneView.setWeather(Weather.brief(r), Weather.icon(r));
             return;
         }
         weather.setText(Weather.line(weatherPlace, r));
@@ -4437,6 +4458,23 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             panel.animate().alpha(1f).scaleY(1f).translationY(0f).setDuration(220)
                     .setInterpolator(new android.view.animation.DecelerateInterpolator(1.6f)).start();
         }
+        rows.getChildAt(0).requestFocus();
+    }
+
+    /** Hold OK on a Keep watching card: one row, to take the show off the row. */
+    private void showCardMenu(View card, Runnable remove) {
+        View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
+        LinearLayout rows = panel.findViewById(R.id.rows);
+        PopupWindow popup = glassPopup(panel, (int) (340 * density));
+        addSettingsMenuRow(rows, popup, R.string.kw_remove, () -> {
+            remove.run();
+            hint(R.string.kw_removed, false);
+            // The card is gone: focus goes to the row's first card, or to the dock when the row is empty now.
+            root.postDelayed(() -> {
+                if (keepWatching == null || !keepWatching.focusFirst()) focusTile(Math.max(0, lastFocused));
+            }, 250L);
+        });
+        dropIn(popup, panel, card, Gravity.START);
         rows.getChildAt(0).requestFocus();
     }
 

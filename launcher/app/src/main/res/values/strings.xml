@@ -183,6 +183,10 @@
     <string name="hs_scene_lake">Mountain lake</string>
     <string name="hs_scene_snow">Snow ridge</string>
     <string name="hs_scene_city">City at dusk</string>
+    <string name="hs_scene_stars">Starlit peaks</string>
+    <string name="hs_scene_aurora">Northern lights</string>
+    <string name="hs_scene_tarn">Lakeside stars</string>
+    <string name="hs_scene_oldtown">Old town lights</string>
     <string name="hs_backgrounds">Backgrounds</string>
     <string name="hs_backgrounds_note">Which scenes Home may show</string>
     <string name="hs_backgrounds_count">%1$d of %2$d on</string>
@@ -225,6 +229,10 @@
     <string name="hs_place_note">Set with weather_place, latitude and longitude in config.xml</string>
     <string name="hs_reorder">Reorder apps</string>
     <string name="hs_reorder_note">Move tiles with the remote</string>
+    <string name="hs_calm">Calm app tiles</string>
+    <string name="hs_calm_note">Apps you are not on are a little dimmer, so the picture leads</string>
+    <string name="kw_remove">Remove from Keep watching</string>
+    <string name="kw_removed">Removed. It returns if you watch it again.</string>
     <string name="hs_sec_layout">Apps and layout</string>
     <string name="hs_sec_motion">Motion</string>
     <string name="hs_hint_step">OK or Right for the next, Left for the one before</string>

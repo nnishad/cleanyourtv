@@ -104,6 +104,24 @@ final class Weather {
         }
     }
 
+    /** "31° Partly cloudy": the short form beside the date on a scene, which draws icon(r) before it. */
+    static String brief(Reading r) {
+        String what = describe(r.code, r.day);
+        return String.format(Locale.US, "%d°", r.tempC) + (what.isEmpty() ? "" : " " + what);
+    }
+
+    /** The small picture for a reading: sun or moon, cloud, fog, rain, snow or storm. */
+    static int icon(Reading r) {
+        int c = r.code;
+        if (c == 0 || c == 1) return r.day ? R.drawable.ic_wx_sun : R.drawable.ic_wx_moon;
+        if (c == 2 || c == 3) return R.drawable.ic_wx_cloud;
+        if (c == 45 || c == 48) return R.drawable.ic_wx_fog;
+        if ((c >= 71 && c <= 77) || c == 85 || c == 86) return R.drawable.ic_wx_snow;
+        if (c >= 95) return R.drawable.ic_wx_storm;
+        if (c >= 51 && c <= 82) return R.drawable.ic_wx_rain;
+        return 0;
+    }
+
     /** "Vilnius  ·  31°C  ·  Partly cloudy  ·  Feels like 34°C". */
     static String line(String place, Reading r) {
         StringBuilder s = new StringBuilder();

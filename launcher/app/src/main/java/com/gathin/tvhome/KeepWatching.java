@@ -51,6 +51,9 @@ final class KeepWatching {
     interface Listener {
         /** A card took focus: the dock's glass highlight has to go. {@code context} says what it is, for the context line. */
         void onCardFocused(String context);
+
+        /** OK was held on a card: offer to take the show off the row ({@code remove} does it). */
+        void onCardMenu(View card, Runnable remove);
     }
 
     private static final Uri WATCH_NEXT = Uri.parse("content://android.media.tv/watch_next_program");
@@ -59,12 +62,15 @@ final class KeepWatching {
     private static final long CACHE_DAYS_MS = 7L * 24 * 3600 * 1000;
     private static final String[] COLUMNS = {"_id", "package_name", "title", "episode_title", "season_display_number",
             "episode_display_number", "poster_art_uri", "thumbnail_uri", "last_playback_position_millis",
-            "duration_millis", "intent_uri"};
+            "duration_millis", "intent_uri", "last_engagement_time_utc_millis"};
+    /** Shows taken off the row here: row id to when it was last watched then. One watched again since comes back. */
+    private static final String HIDDEN_PREFS = "keep_watching_hidden";
 
     private static final class Item {
         String id, pkg, app, title, sub, art, intentUri;
         int progress;   // percent
         long leftMs;    // how much is left to watch, 0 when unknown
+        long engaged;   // when it was last watched
     }
 
     private final Activity activity;
@@ -238,12 +244,21 @@ final class KeepWatching {
         PackageManager pm = ctx.getPackageManager();
         Map<String, Integer> perApp = new HashMap<>();
         Map<String, String> labels = new HashMap<>();
+        android.content.SharedPreferences hidden = ctx.getSharedPreferences(HIDDEN_PREFS, Context.MODE_PRIVATE);
         try (Cursor c = ctx.getContentResolver().query(WATCH_NEXT, COLUMNS, null, null,
                 "last_engagement_time_utc_millis DESC")) {
             if (c == null) return out;
             while (c.moveToNext() && out.size() < MAX_CARDS) {
                 String pkg = c.getString(1);
                 if (pkg == null || pkg.equals(ctx.getPackageName())) continue;
+                // Taken off the row by the viewer, and not watched since: it stays off. Only the app that owns an
+                // entry can delete it from Watch Next, so this launcher keeps its own list.
+                String rowId = c.getString(0);
+                long engaged = c.getLong(11);
+                if (rowId != null && hidden.contains(rowId)) {
+                    if (engaged <= hidden.getLong(rowId, 0L)) continue;
+                    hidden.edit().remove(rowId).apply();
+                }
                 int n = perApp.containsKey(pkg) ? perApp.get(pkg) + 1 : 1;
                 perApp.put(pkg, n);
                 if (n > PER_APP) continue;
@@ -274,6 +289,7 @@ final class KeepWatching {
                 it.progress = dur > 0 && pos > 0 ? (int) Math.min(100, pos * 100 / dur) : 0;
                 it.leftMs = dur > 0 && pos > 0 && pos < dur ? dur - pos : 0;
                 it.intentUri = c.getString(10);
+                it.engaged = engaged;
                 out.add(it);
             }
         } catch (RuntimeException e) {
@@ -417,6 +433,14 @@ final class KeepWatching {
         return where.isEmpty() ? it.title : it.title + "  \u00B7  " + where;
     }
 
+    /** Takes a show off the row until it is watched again. */
+    private void hide(Item it) {
+        if (it.id == null) return;
+        activity.getSharedPreferences(HIDDEN_PREFS, Context.MODE_PRIVATE).edit()
+                .putLong(it.id, Math.max(it.engaged, 1L)).apply();
+        refresh();
+    }
+
     // ---- opening a card -----------------------------------------------------------------------------
 
     private void open(Item it) {
@@ -468,6 +492,10 @@ final class KeepWatching {
             h.size(cardWidth);
             h.itemView.setContentDescription(it.app + ", " + describe(it));   // read out by TalkBack
             h.itemView.setOnClickListener(v -> open(it));
+            h.itemView.setOnLongClickListener(v -> {
+                listener.onCardMenu(v, () -> hide(it));
+                return true;
+            });
         }
 
         @Override
