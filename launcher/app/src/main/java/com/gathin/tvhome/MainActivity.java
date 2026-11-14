@@ -202,6 +202,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private String weatherPlace = "", weatherLat = "", weatherLon = "";
     private static final long WEATHER_REFRESH_MS = 30 * 60 * 1000L, WEATHER_RETRY_MS = 5 * 60 * 1000L;
     private final Runnable weatherTick = this::refreshWeather;
+    /** Couch-tv port (Config.scenes): the scene behind Home, drawn natively; null when the theme does not ask for it. */
+    private SceneView sceneView;
     private List<RaceWeekend.Race> raceCalendar;
     private View racePanel;
     private TextView raceKicker, raceHeadline, raceSessions;
@@ -509,6 +511,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // the theme's background, so launch looks the same.
         getWindow().setBackgroundDrawable(null);
         wallpaperPlayer = new WallpaperPlayer(this, root, cfg);
+        if (cfg.scenes) {
+            // Behind everything; the scene draws its own clock and date, so the header's are hidden (kept in
+            // the layout, as the weather line and the pills are placed against it).
+            sceneView = new SceneView(this, cfg);
+            root.addView(sceneView, 0, new FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            findViewById(R.id.leftBlock).setVisibility(View.INVISIBLE);
+            findViewById(R.id.weather).setVisibility(View.GONE);
+        }
         sky = findViewById(R.id.sky);
         sky.setIntensity(cfg.skyIntensity);
         glass = findViewById(R.id.glass);
@@ -1103,6 +1114,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             return;
         }
         restartIdleClock();
+        if (sceneView != null) {
+            sceneView.ensureLoaded();   // dropped by onTrimMemory
+            sceneView.refresh();
+        }
         promptsPaused = false;
         if (grid.getAdapter() == null) grid.setAdapter(adapter);   // dropped by onTrimMemory
         switch (tileRefresh.onResume(packagesChangedSinceRebuild())) {
@@ -1314,6 +1329,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         root.removeCallbacks(showIdleClock);
         endReorder();   // Home or another app while reordering keeps the order so far
         wallpaperPlayer.stop();
+        if (sceneView != null) sceneView.pause();
         stopAmbientAnimation();
         hero.animate().cancel();
         ambient.animate().cancel();
@@ -1362,6 +1378,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         heroArtCache.clear();
         heroArtKey = null;
         wallpaperPlayer.releaseForMemoryPressure();
+        if (sceneView != null) sceneView.release();
         tileRefresh.invalidate();
     }
 
@@ -2275,6 +2292,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     private void showWeather(Weather.Reading r) {
         if (r == null || weather == null) return;
+        if (sceneView != null) {
+            sceneView.setWeather(Weather.line(weatherPlace, r));
+            return;
+        }
         weather.setText(Weather.line(weatherPlace, r));
         weather.setVisibility(View.VISIBLE);
     }
@@ -2739,7 +2760,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     private void updateClockVisibility() {
         boolean valid = System.currentTimeMillis() >= TIME_VALID_AFTER_MS;
-        clockBlock.setVisibility(valid ? View.VISIBLE : View.INVISIBLE);
+        clockBlock.setVisibility(valid && sceneView == null ? View.VISIBLE : View.INVISIBLE);   // the scene draws its own clock
         handler.removeCallbacks(clockCheck);
         if (valid) {
             updateGreeting();
