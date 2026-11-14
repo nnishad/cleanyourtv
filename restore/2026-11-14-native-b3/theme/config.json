@@ -1,0 +1,41 @@
+{
+  "dock_apps": [
+    "com.netflix.ninja",
+    "com.amazon.amazonvideo.livingroom",
+    "com.google.android.youtube.tv",
+    "in.startv.hotstar"
+  ],
+  "background_color": "#090C14",
+  "wallpaper": true,
+  "cinematic_home": true,
+  "dock_glass": true,
+  "icon_only_buttons": true,
+  "app_glow": false,
+  "glow_style": "horizon",
+  "focus_overshoot": false,
+  "advanced_effects": true,
+  "columns": 4,
+  "key_filter": true,
+  "consume_volume_keys": true,
+  "stock_home_redirect": "",
+  "cinematic_white_focus": true,
+  "wallpaper_true_color": true,
+  "header_white": true,
+  "hidden_apps": [
+    "com.mediatek.wwtv.tvcenter",
+    "com.mitv.gallery",
+    "com.tcl.partnercustomizer",
+    "com.tcl.guard",
+    "com.tcl.suspension",
+    "com.tcl.t_solo",
+    "com.google.android.videos",
+    "com.google.android.youtube.tvmusic",
+    "com.google.android.play.games"
+  ],
+  "fade_rows": true,
+  "wallpaper_rotation_minutes": 180,
+  "wallpaper_order": "shuffle",
+  "cinematic_scrim": 35,
+  "cinematic_art": 8,
+  "wallpaper_dim": 10
+}
