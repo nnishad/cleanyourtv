@@ -45,5 +45,5 @@
   "icon_only_inputs": false,
   "hide_tile_names": true,
   "dock_tight": true,
-  "calm_tiles": true
+  "calm_tiles": false
 }
