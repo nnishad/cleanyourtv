@@ -49,8 +49,8 @@ import java.util.concurrent.Executors;
 final class KeepWatching {
 
     interface Listener {
-        /** A card took focus: the dock's glass highlight has to go. */
-        void onCardFocused();
+        /** A card took focus: the dock's glass highlight has to go. {@code context} says what it is, for the context line. */
+        void onCardFocused(String context);
     }
 
     private static final Uri WATCH_NEXT = Uri.parse("content://android.media.tv/watch_next_program");
@@ -64,6 +64,7 @@ final class KeepWatching {
     private static final class Item {
         String id, pkg, app, title, sub, art, intentUri;
         int progress;   // percent
+        long leftMs;    // how much is left to watch, 0 when unknown
     }
 
     private final Activity activity;
@@ -78,6 +79,7 @@ final class KeepWatching {
     private final float density;
     private List<Item> items = new ArrayList<>();
     private int cardWidth;   // 0: the layout's own width
+    private int accent;      // the scene's accent for the progress bars; 0 keeps the default
     private int bandPx;      // the dock band's width the row lines up with
     private String signature = "";
     private int lastWant = -1;
@@ -139,6 +141,18 @@ final class KeepWatching {
         thumbs.evictAll();
     }
 
+    /** The scene's accent colour, for the progress bars. */
+    void setAccent(int argb) {
+        if (argb == accent) return;
+        accent = argb;
+        list.getAdapter().notifyDataSetChanged();
+    }
+
+    /** The "Keep watching" heading, which the context line sits level with. */
+    View heading() {
+        return ((ViewGroup) block).getChildAt(0);
+    }
+
     /** The cards on screen now, for the inactivity dim. */
     List<View> cards() {
         List<View> out = new ArrayList<>();
@@ -180,7 +194,17 @@ final class KeepWatching {
     void alignTo(int left, int right) {
         int wrap = ((View) block.getParent()).getWidth();
         if (right - left <= 0 || wrap <= 0) return;
-        block.setPaddingRelative(left, block.getPaddingTop(), Math.max(0, wrap - right), block.getPaddingBottom());
+        // The list reaches zoomRoom past the band on both sides, so a focused card's zoom is not cut; its first card
+        // still starts on the band's left edge, and the peeking card fades out under the edge shade.
+        int zoomRoom = (int) (16 * density);
+        int padStart = Math.max(0, left - zoomRoom), padEnd = Math.max(0, wrap - right - zoomRoom);
+        block.setPaddingRelative(padStart, block.getPaddingTop(), padEnd, block.getPaddingBottom());
+        list.setPaddingRelative(left - padStart, list.getPaddingTop(), wrap - right - padEnd, list.getPaddingBottom());
+        View heading = ((ViewGroup) block).getChildAt(0);
+        heading.setPaddingRelative(left - padStart - (int) (6 * density), heading.getPaddingTop(), 0, heading.getPaddingBottom());
+        // New padding with an old scroll offset left the cards short of the band's edge: back to the start, unless
+        // someone is in the row.
+        if (!list.hasFocus()) ((LinearLayoutManager) list.getLayoutManager()).scrollToPositionWithOffset(0, 0);
         bandPx = right - left;
         sizeCards();
     }
@@ -267,6 +291,7 @@ final class KeepWatching {
                 it.art = thumb != null && !thumb.isEmpty() ? thumb : poster != null && !poster.isEmpty() ? poster : null;
                 long pos = c.getLong(8), dur = c.getLong(9);
                 it.progress = dur > 0 && pos > 0 ? (int) Math.min(100, pos * 100 / dur) : 0;
+                it.leftMs = dur > 0 && pos > 0 && pos < dur ? dur - pos : 0;
                 it.intentUri = c.getString(10);
                 out.add(it);
             }
@@ -274,6 +299,20 @@ final class KeepWatching {
             return new ArrayList<>();   // no provider, or the permission was taken back: an empty row, never a crash
         }
         return out;
+    }
+
+    private final java.util.Map<String, android.graphics.drawable.Drawable> icons = new HashMap<>();
+
+    /** The app's own icon for the badge on its cards; cached for the session, null when there is none. */
+    private android.graphics.drawable.Drawable appIcon(String pkg) {
+        if (icons.containsKey(pkg)) return icons.get(pkg);
+        android.graphics.drawable.Drawable d = null;
+        try {
+            d = activity.getPackageManager().getApplicationIcon(pkg);
+        } catch (Exception ignored) {
+        }
+        icons.put(pkg, d);
+        return d;
     }
 
     // ---- the pictures -----------------------------------------------------------------------------------
@@ -369,6 +408,14 @@ final class KeepWatching {
         return sb.toString();
     }
 
+    /** "Planet Earth III  ·  S1 E4  ·  23 min left": the show, where you are, and how long is left. */
+    private static String describe(Item it) {
+        StringBuilder s = new StringBuilder(it.title);
+        if (!it.sub.isEmpty()) s.append("  \u00B7  ").append(it.sub);
+        if (it.leftMs >= 60_000L) s.append("  \u00B7  ").append(it.leftMs / 60_000L).append(" min left");
+        return s.toString();
+    }
+
     // ---- opening a card -----------------------------------------------------------------------------
 
     private void open(Item it) {
@@ -408,11 +455,13 @@ final class KeepWatching {
         public void onBindViewHolder(@NonNull Holder h, int position) {
             Item it = items.get(position);
             h.app.setText(it.app);
+            h.icon.setImageDrawable(appIcon(it.pkg));
             h.title.setText(it.title);
             h.sub.setText(it.sub);
             h.sub.setVisibility(it.sub.isEmpty() ? View.GONE : View.VISIBLE);
             h.progress.setVisibility(it.progress > 0 ? View.VISIBLE : View.INVISIBLE);
             h.progress.setProgress(it.progress);
+            if (accent != 0) h.progress.setProgressTintList(android.content.res.ColorStateList.valueOf(accent));
             Bitmap b = it.art == null ? null : thumbs.get(it.art);
             h.thumb.setImageBitmap(b);
             if (cardWidth > 0) h.itemView.getLayoutParams().width = cardWidth;
@@ -427,17 +476,22 @@ final class KeepWatching {
         final class Holder extends RecyclerView.ViewHolder {
             final ImageView thumb;
             final TextView app, title, sub;
+            final ImageView icon;
             final ProgressBar progress;
 
             Holder(View v) {
                 super(v);
                 thumb = v.findViewById(R.id.watchThumb);
                 app = v.findViewById(R.id.watchApp);
+                icon = v.findViewById(R.id.watchAppIcon);
                 title = v.findViewById(R.id.watchTitle);
                 sub = v.findViewById(R.id.watchSub);
                 progress = v.findViewById(R.id.watchProgress);
                 v.setOnFocusChangeListener((view, has) -> {
-                    if (has) listener.onCardFocused();
+                    if (has) {
+                        int at = getBindingAdapterPosition();
+                        listener.onCardFocused(at >= 0 && at < items.size() ? describe(items.get(at)) : "");
+                    }
                 });
                 Focus.attach(v, true, false, (view, code, event) -> {
                     if (event.getAction() == android.view.KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) nudgeAtEnds(view, code);

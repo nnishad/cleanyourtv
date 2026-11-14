@@ -29,8 +29,8 @@ public final class CouchSettingsActivity extends Activity {
     private static final String[] SECTIONS = {"Look and scenes", "Home rows", "Weather", "Apps", "About"};
     private static final int[] SECTION_ICONS = {R.drawable.ic_settings_look, R.drawable.ic_settings_rows,
             R.drawable.ic_settings_weather, R.drawable.ic_settings_apps, R.drawable.ic_settings_about};
-    private static final String[] SCENE_IDS = {"", "night", "golden", "water", "fog", "dawn"};
-    private static final String[] SCENE_NAMES = {"Different each start", "Night", "Golden hour", "Waterline", "Fog", "Dawn"};
+    private static final String[] SCENE_IDS = {"", "random", "night", "golden", "water", "fog", "dawn"};
+    private static final String[] SCENE_NAMES = {"Follows the time", "Different each start", "Night", "Golden hour", "Waterline", "Fog", "Dawn"};
     private static final String[] CLOCK_IDS = {"system", "12", "24"};
     private static final String[] CLOCK_NAMES = {"As the TV is set", "12-hour", "24-hour"};
     private static final int[] HIDE_SECONDS = {0, 30, 60, 120, 300};

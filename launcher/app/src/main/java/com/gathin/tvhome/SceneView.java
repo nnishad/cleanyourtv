@@ -84,7 +84,15 @@ final class SceneView extends View {
 
     private final Handler ui = new Handler(Looper.getMainLooper());
     private final ExecutorService io = Executors.newSingleThreadExecutor();
-    private final Spec spec;
+    private Spec spec;
+    /** The configured scene: an id, "random" for a different one each start, or empty to follow the time and weather. */
+    private final String wanted;
+    /** Told the scene's accent colour once its photo is in (design/REVAMP-PLAN.md 3.1). */
+    interface AccentListener {
+        void onAccent(int argb);
+    }
+    private AccentListener accentListener;
+    private int accent;
     private final boolean is24;
     private final Typeface clockFace, captionFace;
     private final Paint photoPaint = new Paint(Paint.FILTER_BITMAP_FLAG);
@@ -115,7 +123,8 @@ final class SceneView extends View {
         // are drawn as paths each time. As a GPU layer it is drawn once per change and is one textured quad after that.
         setLayerType(LAYER_TYPE_HARDWARE, null);
         background = cfg.backgroundColor;
-        spec = pick(context, cfg.scene);
+        wanted = cfg.scene == null ? "" : cfg.scene;
+        spec = pick(context, wanted);
         time = date = "";
         is24 = ClockFormat.is24(context, cfg.clockFormat);
         Typeface antonio = null, outfit = null;
@@ -129,28 +138,70 @@ final class SceneView extends View {
         }
         clockFace = antonio != null ? antonio : Typeface.create("sans-serif-light", Typeface.NORMAL);
         captionFace = outfit != null ? outfit : Typeface.DEFAULT;
-        if (spec.photoBright != 1f) {
-            photoPaint.setColorFilter(filter(spec.photoBright, 1f));
-            fgPaint.setColorFilter(filter(spec.photoBright, 1f));
-        }
         for (Paint p : new Paint[]{fill, rimFill, rim, sheen}) {
             p.setTypeface(clockFace);
             p.setLetterSpacing(-0.02f);
         }
-        fill.setColorFilter(filter(spec.fillBright, spec.fillSat));
-        fill.setAlpha(Math.round(spec.fillAlpha * 255));
-        rimFill.setColor(spec.rimFill);
         rim.setStyle(Paint.Style.STROKE);
-        rim.setColor(spec.rimStroke);
+        applySpec();
         caption.setTypeface(captionFace);
         caption.setColor(0xEBFFFFFF);
         caption.setTextAlign(Paint.Align.CENTER);
         ensureLoaded();
     }
 
-    /** A new picture each start, never the one shown last time, unless config.json pins one ("scene": "fog"). */
+    /** The paints that depend on the scene. */
+    private void applySpec() {
+        android.graphics.ColorFilter photo = spec.photoBright != 1f ? filter(spec.photoBright, 1f) : null;
+        photoPaint.setColorFilter(photo);
+        fgPaint.setColorFilter(photo);
+        fill.setColorFilter(filter(spec.fillBright, spec.fillSat));
+        fill.setAlpha(Math.round(spec.fillAlpha * 255));
+        rimFill.setColor(spec.rimFill);
+        rim.setColor(spec.rimStroke);
+        shadeFor = -1;
+    }
+
+    void setAccentListener(AccentListener l) {
+        accentListener = l;
+        if (accent != 0 && l != null) l.onAccent(accent);
+    }
+
+    /**
+     * Home came back: when the scene follows the time and weather and they now call for another one (evening came,
+     * fog came down), that one comes in. A pinned or random scene stays.
+     */
+    void followTime() {
+        if (!wanted.isEmpty()) return;
+        Spec now = byTime(getContext());
+        if (now == spec) return;
+        spec = now;
+        applySpec();
+        release();
+        ensureLoaded();
+    }
+
+    /** Dawn in the morning, Waterline by day, Golden hour in the evening, Night at night; Fog when it is foggy. */
+    private static Spec byTime(Context ctx) {
+        Weather.Reading r = Weather.cached(ctx);
+        String id;
+        if (r != null && (r.code == 45 || r.code == 48) && System.currentTimeMillis() - r.at < 3 * 3600_000L) {
+            id = "fog";
+        } else {
+            int h = java.time.LocalTime.now().getHour();
+            id = h >= 5 && h < 9 ? "dawn" : h >= 9 && h < 16 ? "water" : h >= 16 && h < 19 ? "golden" : "night";
+        }
+        for (Spec s : SPECS) if (s.id.equals(id)) return s;
+        return SPECS[0];
+    }
+
+    /**
+     * The scene to show: the one config.json or Home settings pins ("scene": "fog"), one that follows the time and
+     * weather (empty, the default), or "random": a new picture each start, never the one shown last time.
+     */
     private static Spec pick(Context ctx, String wanted) {
         for (Spec s : SPECS) if (s.id.equalsIgnoreCase(wanted)) return s;
+        if (!"random".equalsIgnoreCase(wanted)) return byTime(ctx);
         SharedPreferences prefs = ctx.getSharedPreferences("scene_state", Context.MODE_PRIVATE);
         int last = prefs.getInt("last", -1);
         Random random = new Random();
@@ -213,6 +264,10 @@ final class SceneView extends View {
                 cutout = f;
                 glassShader = null;
                 invalidate();
+                if (p != null) {
+                    accent = accentOf(p);
+                    if (accentListener != null) accentListener.onAccent(accent);
+                }
             });
         });
     }
@@ -224,6 +279,32 @@ final class SceneView extends View {
         photo = glass = cutout = null;
         glassShader = null;
         for (Bitmap b : all) if (b != null) b.recycle();
+    }
+
+    /**
+     * The scene's accent: the strongest hue family among the more colourful pixels in its upper part (a coarse 24x9
+     * sample in twelve 30-degree bins, weighted by saturation and brightness), as a light, clear tone that reads on
+     * dark glass. A mean would blend a teal sky and an orange peak into green. One pass over 216 pixels per picture.
+     */
+    private static int accentOf(Bitmap b) {
+        Bitmap small = Bitmap.createScaledBitmap(b, 24, 14, true);
+        float[] hsv = new float[3];
+        double[] bins = new double[12], hueSum = new double[12];
+        for (int i = 0; i < 24; i++) {
+            for (int j = 0; j < 9; j++) {   // the upper part: sky and subject, not the foreground at the bottom
+                android.graphics.Color.colorToHSV(small.getPixel(i, j), hsv);
+                double w = hsv[1] * hsv[1] * hsv[2];   // favour clearly coloured pixels over grey ones
+                int k = Math.min(11, (int) (hsv[0] / 30f));
+                bins[k] += w;
+                hueSum[k] += w * hsv[0];
+            }
+        }
+        if (small != b) small.recycle();
+        int best = 0;
+        for (int k = 1; k < 12; k++) if (bins[k] > bins[best]) best = k;
+        if (bins[best] < 1e-3) return 0xFF8FD3FF;
+        float hue = (float) (hueSum[best] / bins[best]);
+        return android.graphics.Color.HSVToColor(new float[]{hue, 0.45f, 1f});
     }
 
     private static Bitmap decode(Context ctx, String path, Bitmap.Config config, int sample) {
