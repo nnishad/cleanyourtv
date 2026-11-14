@@ -200,9 +200,7 @@
     <string name="hs_show_weather">Mostra il meteo</string>
     <string name="hs_weather_note">Una piccola richiesta ogni 30 minuti mentre Home è sullo schermo</string>
     <string name="hs_weather_none">Nessun luogo impostato</string>
-    <string name="hs_place">Luogo: %1$s</string>
     <string name="hs_place_none">nessuno</string>
-    <string name="hs_place_note">Si imposta con weather_place, latitude e longitude in config.xml</string>
     <string name="hs_reorder">Riordina le app</string>
     <string name="hs_reorder_note">Sposta i riquadri con il telecomando</string>
     <string name="kw_remove">Rimuovi da Continua a guardare</string>
@@ -260,4 +258,12 @@
     <string name="wx_thunderstorm">Temporale</string>
     <string name="wx_thunderstorm_hail">Temporale, grandine</string>
     <string name="wx_feels_like">Percepita %1$d°C</string>
+    <string name="hs_place_label">Luogo</string>
+    <string name="hs_place_set_note">Digita la città più vicina; le previsioni arrivano da Open-Meteo</string>
+    <string name="hs_place_type">Digita una città</string>
+    <string name="hs_place_page_hint">OK per digitare, poi Cerca; OK su un risultato per sceglierlo, Indietro per tornare</string>
+    <string name="hs_place_searching">Ricerca in corso…</string>
+    <string name="hs_place_not_found">Nessun luogo trovato. Controlla l\'ortografia.</string>
+    <string name="hs_place_offline">Ricerca non riuscita. Controlla la rete.</string>
+    <string name="hs_place_forget">Dimentica il luogo</string>
 </resources>

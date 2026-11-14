@@ -165,9 +165,7 @@
     <string name="hs_show_weather">Ob-havoni koʻrsatish</string>
     <string name="hs_weather_note">Bosh ekran yoniq paytda har 30 daqiqada bitta kichik soʻrov</string>
     <string name="hs_weather_none">Joy belgilanmagan</string>
-    <string name="hs_place">Joy: %1$s</string>
     <string name="hs_place_none">yoʻq</string>
-    <string name="hs_place_note">config.xml faylida weather_place, latitude va longitude orqali belgilanadi</string>
     <string name="hs_reorder">Ilovalar tartibini oʻzgartirish</string>
     <string name="hs_reorder_note">Plitkalarni pult bilan suring</string>
     <string name="kw_remove">Tomoshani davom ettirishdan olib tashlash</string>
@@ -225,4 +223,12 @@
     <string name="wx_thunderstorm">Momaqaldiroq</string>
     <string name="wx_thunderstorm_hail">Momaqaldiroq, doʻl</string>
     <string name="wx_feels_like">%1$d°C kabi seziladi</string>
+    <string name="hs_place_label">Joy</string>
+    <string name="hs_place_set_note">Eng yaqin shaharni kiriting; prognoz Open-Meteo xizmatidan olinadi</string>
+    <string name="hs_place_type">Shahar nomini kiriting</string>
+    <string name="hs_place_page_hint">Yozish uchun OK, keyin Search; tanlash uchun natijada OK, qaytish uchun Back</string>
+    <string name="hs_place_searching">Qidirilmoqda…</string>
+    <string name="hs_place_not_found">Joy topilmadi. Imloni tekshiring.</string>
+    <string name="hs_place_offline">Qidirib boʻlmadi. Tarmoqni tekshiring.</string>
+    <string name="hs_place_forget">Joyni unutish</string>
 </resources>

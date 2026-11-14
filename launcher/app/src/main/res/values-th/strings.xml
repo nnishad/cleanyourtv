@@ -128,9 +128,7 @@
     <string name="hs_show_weather">แสดงสภาพอากาศ</string>
     <string name="hs_weather_note">ส่งคำขอขนาดเล็กหนึ่งครั้งทุก 30 นาทีขณะหน้าหลักเปิดอยู่</string>
     <string name="hs_weather_none">ยังไม่ได้ตั้งสถานที่</string>
-    <string name="hs_place">สถานที่: %1$s</string>
     <string name="hs_place_none">ไม่มี</string>
-    <string name="hs_place_note">ตั้งด้วย weather_place, latitude และ longitude ใน config.xml</string>
     <string name="hs_reorder">จัดเรียงแอป</string>
     <string name="hs_reorder_note">ย้ายไทล์ด้วยรีโมต</string>
     <string name="kw_remove">นำออกจากดูต่อ</string>
@@ -188,4 +186,12 @@
     <string name="wx_thunderstorm">พายุฝนฟ้าคะนอง</string>
     <string name="wx_thunderstorm_hail">พายุฝนฟ้าคะนอง มีลูกเห็บ</string>
     <string name="wx_feels_like">รู้สึกเหมือน %1$d°C</string>
+    <string name="hs_place_label">สถานที่</string>
+    <string name="hs_place_set_note">พิมพ์เมืองที่ใกล้ที่สุด พยากรณ์มาจาก Open-Meteo</string>
+    <string name="hs_place_type">พิมพ์ชื่อเมือง</string>
+    <string name="hs_place_page_hint">กด OK เพื่อพิมพ์ แล้วกดค้นหา กด OK ที่ผลลัพธ์เพื่อเลือก กดย้อนกลับเพื่อกลับ</string>
+    <string name="hs_place_searching">กำลังค้นหา…</string>
+    <string name="hs_place_not_found">ไม่พบสถานที่ ตรวจสอบการสะกด</string>
+    <string name="hs_place_offline">ค้นหาไม่ได้ ตรวจสอบเครือข่าย</string>
+    <string name="hs_place_forget">ลืมสถานที่</string>
 </resources>

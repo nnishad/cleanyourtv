@@ -37,6 +37,11 @@ final class Weather {
         }
     }
 
+    /** Drops the reading kept on the TV (the place changed). */
+    static void forget(Context context) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().clear().apply();
+    }
+
     /** The last reading kept on the TV, or null if there is none. */
     static Reading cached(Context context) {
         SharedPreferences p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);

@@ -163,9 +163,7 @@
     <string name="hs_show_weather">Zobrazit počasí</string>
     <string name="hs_weather_note">Jeden malý dotaz každých 30 minut, když je domovská obrazovka zapnutá</string>
     <string name="hs_weather_none">Není nastaveno žádné místo</string>
-    <string name="hs_place">Místo: %1$s</string>
     <string name="hs_place_none">žádné</string>
-    <string name="hs_place_note">Nastavte pomocí weather_place, latitude a longitude v config.xml</string>
     <string name="hs_reorder">Seřadit aplikace</string>
     <string name="hs_reorder_note">Přesouvejte dlaždice ovladačem</string>
     <string name="kw_remove">Odebrat z řady Pokračovat ve sledování</string>
@@ -223,4 +221,12 @@
     <string name="wx_thunderstorm">Bouřka</string>
     <string name="wx_thunderstorm_hail">Bouřka s kroupami</string>
     <string name="wx_feels_like">Pocitově %1$d°C</string>
+    <string name="hs_place_label">Místo</string>
+    <string name="hs_place_set_note">Zadejte nejbližší město; předpověď pochází z Open-Meteo</string>
+    <string name="hs_place_type">Zadejte město</string>
+    <string name="hs_place_page_hint">OK pro psaní, pak Hledat; OK na výsledku ho vybere, Zpět se vrátí</string>
+    <string name="hs_place_searching">Hledání…</string>
+    <string name="hs_place_not_found">Místo nenalezeno. Zkontrolujte pravopis.</string>
+    <string name="hs_place_offline">Hledání se nezdařilo. Zkontrolujte síť.</string>
+    <string name="hs_place_forget">Zapomenout místo</string>
 </resources>

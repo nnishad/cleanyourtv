@@ -166,9 +166,7 @@
     <string name="hs_show_weather">Weer tonen</string>
     <string name="hs_weather_note">Eén klein verzoek per 30 minuten terwijl Home aan staat</string>
     <string name="hs_weather_none">Geen plaats ingesteld</string>
-    <string name="hs_place">Plaats: %1$s</string>
     <string name="hs_place_none">geen</string>
-    <string name="hs_place_note">Stel in met weather_place, latitude en longitude in config.xml</string>
     <string name="hs_reorder">Apps ordenen</string>
     <string name="hs_reorder_note">Verplaats tegels met de afstandsbediening</string>
     <string name="kw_remove">Verwijderen uit Verder kijken</string>
@@ -226,4 +224,12 @@
     <string name="wx_thunderstorm">Onweer</string>
     <string name="wx_thunderstorm_hail">Onweer met hagel</string>
     <string name="wx_feels_like">Voelt als %1$d°C</string>
+    <string name="hs_place_label">Plaats</string>
+    <string name="hs_place_set_note">Typ je dichtstbijzijnde stad; de voorspelling komt van Open-Meteo</string>
+    <string name="hs_place_type">Typ een stad</string>
+    <string name="hs_place_page_hint">OK om te typen, dan Zoeken; OK op een resultaat om te kiezen, Terug om terug te gaan</string>
+    <string name="hs_place_searching">Zoeken…</string>
+    <string name="hs_place_not_found">Geen plaats gevonden. Controleer de spelling.</string>
+    <string name="hs_place_offline">Zoeken mislukt. Controleer het netwerk.</string>
+    <string name="hs_place_forget">Plaats vergeten</string>
 </resources>
