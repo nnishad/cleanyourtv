@@ -3,7 +3,7 @@
   "scenes": true,
   "watch_row": true,
   "hide_rows_idle_seconds": 60,
-  "home_idle_clock_minutes": 15,
+  "home_idle_clock_minutes": 0,
   "dock_apps": [
     "com.netflix.ninja",
     "com.amazon.amazonvideo.livingroom",
