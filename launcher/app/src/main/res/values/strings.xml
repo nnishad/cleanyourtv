@@ -54,26 +54,16 @@
     <string name="rows_below_dock_label">Rows below dock</string>
     <string name="dock_opacity_label">Dock band opacity</string>
     <string name="wallpaper_label">Wallpaper</string>
-    <string name="wallpaper_state">Wallpaper: %1$s</string>
     <string name="wallpaper_none">None</string>
-    <string name="wallpaper_applied">Wallpaper changed</string>
     <string name="wallpaper_theme_default">Theme default</string>
-    <string name="animations_state">Animations: %1$s</string>
     <string name="advanced_effects">Advanced effects</string>
-    <string name="advanced_effects_state">Advanced effects: %1$s</string>
     <string name="open_on_start_label">Open on start</string>
-    <string name="open_on_start_state">Open on start: %1$s</string>
-    <string name="advanced_effects_warning">Adds a lifted tile, icon zoom and smooth colour transitions. May increase memory use; the actual difference depends on your TV.</string>
-    <string name="follow_theme">Follow theme (reset on-TV choices)</string>
-    <string name="follow_theme_hint">Uses the current theme or built-in layout and motion settings. Pushing or resetting a theme also clears your on-TV choices.</string>
     <string name="tv_settings">TV system settings</string>
     <string name="quick_picture">Display</string>
     <string name="quick_network">Network</string>
     <string name="quick_apps">Apps</string>
     <string name="quick_apps_hint">Re-enable</string>
-    <string name="on">On</string>
     <string name="off">Off</string>
-    <string name="enable">Enable</string>
     <string name="input_key_service_description">Opens the input switcher when the remote\'s Input button is pressed.</string>
     <string name="home_key_name">Home button</string>
     <string name="home_key_description">Makes the remote\'s Home button open this launcher.</string>
@@ -155,9 +145,6 @@
     <string name="last_opened">Last opened %1$s</string>
     <!-- game_day: a game on now, in the race panel. -->
     <string name="game_live">Live now</string>
-    <string name="clock_format_system">System</string>
-    <string name="clock_format_12">12-hour</string>
-    <string name="clock_format_24">24-hour</string>
     <string name="keep_watching">Keep watching</string>
 
     <!-- Couch-tv port (couch-port branch): Home settings sheet, gear and Inputs menus, Keep watching. -->
@@ -168,7 +155,6 @@
     <string name="hs_sec_look">Look and scenes</string>
     <string name="hs_sec_rows">Home rows</string>
     <string name="hs_sec_weather">Weather</string>
-    <string name="hs_sec_apps">Apps</string>
     <string name="hs_sec_about">About</string>
     <string name="hs_scene_time">Follows the time</string>
     <string name="hs_scene_random">Different each start</string>
@@ -183,6 +169,10 @@
     <string name="hs_scene_lake">Mountain lake</string>
     <string name="hs_scene_snow">Snow ridge</string>
     <string name="hs_scene_city">City at dusk</string>
+    <string name="hs_scene_stars">Starlit peaks</string>
+    <string name="hs_scene_aurora">Northern lights</string>
+    <string name="hs_scene_tarn">Lakeside stars</string>
+    <string name="hs_scene_oldtown">Old town lights</string>
     <string name="hs_backgrounds">Backgrounds</string>
     <string name="hs_backgrounds_note">Which scenes Home may show</string>
     <string name="hs_backgrounds_count">%1$d of %2$d on</string>
@@ -225,11 +215,26 @@
     <string name="hs_place_note">Set with weather_place, latitude and longitude in config.xml</string>
     <string name="hs_reorder">Reorder apps</string>
     <string name="hs_reorder_note">Move tiles with the remote</string>
-    <string name="hs_grid">Grid, dock and wallpaper</string>
-    <string name="hs_grid_note">Columns, rows, dock opacity, effects and more</string>
+    <string name="kw_remove">Remove from Keep watching</string>
+    <string name="kw_removed">Removed. It returns if you watch it again.</string>
+    <string name="hs_sec_layout">Apps and layout</string>
+    <string name="hs_sec_motion">Motion</string>
+    <string name="hs_hint_step">OK or Right for the next, Left for the one before</string>
+    <string name="hs_hint_page">OK to choose, Back to return</string>
+    <string name="hs_columns_note">How many apps fit across Home</string>
+    <string name="hs_rows_note">Rows of apps shown under the dock before scrolling</string>
+    <string name="hs_dock_opacity_note">How solid the band behind the dock is</string>
+    <string name="hs_animations">Animations</string>
+    <string name="hs_animations_note">Focus, menus and the moves between screens</string>
+    <string name="hs_advanced_note">Tile lift, icon zoom and colour transitions; may use more memory</string>
+    <string name="hs_advanced_needs">Needs Animations on</string>
+    <string name="hs_wallpaper_note">The picture behind Home when Scenes is off</string>
+    <string name="hs_open_on_start_note">An app to open when the TV starts</string>
+    <string name="hs_default_home">Default home screen</string>
+    <string name="hs_default_home_note">Which launcher the Home button opens</string>
     <string name="hs_about">CleanYourTV launcher %1$s</string>
     <string name="hs_about_note">With the couch-tv look: scenes, Keep watching and the idle options</string>
-    <string name="hs_reset">Reset these choices</string>
+    <string name="hs_reset">Reset Home settings</string>
     <string name="hs_reset_note">Back to what the theme says</string>
     <string name="gear_home">Home settings</string>
     <string name="gear_home_note">Scenes, rows, weather and apps</string>
@@ -241,4 +246,29 @@
     <string name="tip_up">Tip: press Up from the apps for Keep watching</string>
     <string name="tip_gear">Tip: the gear opens Home settings and TV settings</string>
     <string name="kw_min_left">%1$d min left</string>
+    <!-- The weather beside the date (Weather.describe). -->
+    <string name="wx_sunny">Sunny</string>
+    <string name="wx_clear">Clear</string>
+    <string name="wx_mostly_sunny">Mostly sunny</string>
+    <string name="wx_mostly_clear">Mostly clear</string>
+    <string name="wx_partly_cloudy">Partly cloudy</string>
+    <string name="wx_overcast">Overcast</string>
+    <string name="wx_fog">Fog</string>
+    <string name="wx_drizzle">Drizzle</string>
+    <string name="wx_freezing_drizzle">Freezing drizzle</string>
+    <string name="wx_light_rain">Light rain</string>
+    <string name="wx_rain">Rain</string>
+    <string name="wx_heavy_rain">Heavy rain</string>
+    <string name="wx_freezing_rain">Freezing rain</string>
+    <string name="wx_light_snow">Light snow</string>
+    <string name="wx_snow">Snow</string>
+    <string name="wx_heavy_snow">Heavy snow</string>
+    <string name="wx_snow_grains">Snow grains</string>
+    <string name="wx_light_showers">Light showers</string>
+    <string name="wx_showers">Showers</string>
+    <string name="wx_heavy_showers">Heavy showers</string>
+    <string name="wx_snow_showers">Snow showers</string>
+    <string name="wx_thunderstorm">Thunderstorm</string>
+    <string name="wx_thunderstorm_hail">Thunderstorm, hail</string>
+    <string name="wx_feels_like">Feels like %1$d°C</string>
 </resources>

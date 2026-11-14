@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The same glass as the home screen's dock band (white 14% fading to 5%, 26dp corners, a thin
-     rim), over a light dark base so white text stays readable on a bright picture. No blur: not affordable here. -->
+<!-- A window over Home (the Inputs list, the gear and tile menus, hints): the dock band's glass and thin rim over
+     a dark base dense enough for white text to read over a bright picture or over the app tiles themselves. No blur:
+     not affordable here. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
         <shape android:shape="rectangle">
-            <gradient android:angle="270" android:startColor="#66101520" android:endColor="#B8090D12" />
+            <gradient android:angle="270" android:startColor="#F5141A24" android:endColor="#FA0C1016" />
             <corners android:radius="@dimen/radius_l" />
         </shape>
     </item>

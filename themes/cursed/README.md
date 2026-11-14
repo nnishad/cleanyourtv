@@ -5,13 +5,17 @@
 A photograph fills Home and the clock is part of it: large glass digits stand behind the nearer scenery, so peaks,
 ridges and city towers cross their lower edge, and every time still reads.
 
-- **Eleven scenes** that follow the time of day: morning, daytime, evening, night, and fog when the weather
-  reports it. Or a different one each start, or one you pin.
+- **Fifteen scenes** that follow the time of day: morning, daytime, evening, night (four night scenes: stars, northern
+  lights, a lake under the Milky Way, an old town's lights), and fog when the weather reports it. Or a different one
+  each start, or one you pin. While Home sits idle with its rows put away, the scene turns to another every few minutes.
 - **Backgrounds you choose:** Home settings, Look and scenes, Backgrounds lists every scene with its picture;
   switch off the ones you do not want.
-- **Keep watching:** a row above the dock with what your apps say you are part way through.
-- **Home settings** in a panel beside Home, which changes as you choose.
+- **Keep watching:** a row of picture cards above the dock, with what your apps say you are part way through, the
+  title on the card and the progress along its bottom. Hold OK on a card to take a show off the row.
+- **One Home settings panel** beside Home, which changes as you choose: backgrounds, rows, the grid and dock,
+  motion, weather. Its sections slide, its switches slide, and Home dissolves rather than blinks when you change one.
 - **A tight glass dock**, icons without names, one focus look on every control.
+- **30 languages** for everything this fork adds (machine translated, not reviewed by native speakers).
 
 ## This is a fork, not only a theme
 
@@ -20,7 +24,7 @@ theme needs the launcher from this branch. The launcher upstream ignores these k
 
 | | Upstream launcher | This branch |
 |---|---|---|
-| APK size | about 0.6 MB | about 19 MB (the photos are stored losslessly) |
+| APK size | about 0.6 MB | about 28 MB (the photos are stored losslessly) |
 | Permissions | none for network | `INTERNET`, used only by the optional weather line; `READ_TV_LISTINGS` for Keep watching |
 | Based on | current `main` | upstream as of launcher 3.3 |
 
@@ -70,9 +74,12 @@ The readings come from Open-Meteo, one small request every 30 minutes while Home
 ## Tested on
 
 An Android TV 12 emulator at 1920x1080, where the screenshot was taken. An earlier build of this branch ran on an
-Android TV 11 set with 2 GB of RAM. It has not been measured on other TVs; on a 1 GB set the photos may be too heavy.
+Android TV 11 set with 2 GB of RAM. This build has not been run on a real TV yet, and not measured on any: the
+cross-fades are full-screen blends, which a slow graphics chip may not do smoothly. On a 1 GB set the photos may
+be too heavy.
 
 ## Credits
 
-Photos and fonts: [launcher/SCENES-CREDITS.md](../../launcher/SCENES-CREDITS.md). Built on [CleanYourTV](https://github.com/Gathin23/cleanyourtv);
+Photos and fonts: [launcher/SCENES-CREDITS.md](../../launcher/SCENES-CREDITS.md). Two of the night photos are
+CC BY-SA 4.0 (share-alike): keep their credit if you redistribute. Built on [CleanYourTV](https://github.com/Gathin23/cleanyourtv);
 the scenes look comes from [couch-tv](https://github.com/Seagey/couch-tv).

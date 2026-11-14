@@ -106,6 +106,17 @@ final class SceneView extends View {
             scene("snow", 170, 440, 1f, BRIGHT_SKY),
             // City at dusk: the towers rise into the digits
             scene("city", 230, 380, 1f, null),
+            // The night scenes. Starlit peaks: the Milky Way over a snowy range, whose summits rise into the digits
+            scene("stars", 240, 440, 1.25f, null),
+            // Northern lights: the clock stands in the aurora, clear of the rocks; no cut-out
+            new Spec("aurora", false, 150, 440, -1, 1.1f, 1f, 1f, 1f, WHITE_RIM, WHITE_FILL, true, null, null, true),
+            // Lakeside stars: a tarn under the Milky Way; the hills at both sides cross the ends of the clock
+            scene("tarn", 180, 440, 1.2f, null),
+            // Old town lights: a lit castle hotel at dusk, its roofs and towers rising into the digits. The digits stand
+            // over lit walls, where plain glass (the picture, blurred) vanishes: theirs is frosted, with a good part of
+            // white in it and a firmer rim. The pale dusk sky gets the top shade.
+            new Spec("oldtown", true, 150, 440, -1, 1.15f, 0.8f, 1f, 1f, 0xD9FFFFFF, 0x73FFFFFF, true, BRIGHT_SKY,
+                    new float[]{0f, 0.3f}, true),
     };
 
     private static Spec scene(String id, float top, float size, float fillBright, int[] shade) {
@@ -115,10 +126,10 @@ final class SceneView extends View {
 
     /** Scenes for each part of the day; following the time shows one of them, and keeps it until the part changes. */
     private static final String[][] BY_TIME = {
-            {"dawn", "ember"},                                                  // 5 to 9
+            {"dawn", "ember"},                                                  // 5 to 9: Ember ridges is a sunrise
             {"water", "alpine", "lake", "highland", "snow", "bridge"},          // 9 to 16
             {"golden", "city"},                                                 // 16 to 19
-            {"city", "ember"},                                                  // 19 to 5: the two darkest
+            {"stars", "aurora", "tarn", "oldtown"},                             // 19 to 5
             {"fog"},                                                            // fog or mist reported
     };
 
@@ -166,6 +177,28 @@ final class SceneView extends View {
     private boolean loading, released;
     private int shadeFor = -1, scrimFor = -1;
     private String time = "", date = "", weather = "";
+    private android.graphics.drawable.Drawable weatherIcon;
+    /** The minute before, while its digits dissolve into the new ones (clockFade 0 to 1); null otherwise. */
+    private String prevTime;
+    private float clockFade = 1f;
+    private android.animation.ValueAnimator clockAnim;
+    /** Fades and dissolves are on (animations on, reduced motion off). */
+    private final boolean animated;
+    /** A picture laid over the scene and faded out, so a new scene dissolves in over the old one (setFader). */
+    private android.widget.ImageView fader;
+    private Bitmap fadeBitmap;
+    /** The first load makes no fade of its own: Home is covering a rebuild itself (setFader). */
+    private boolean quietOnce;
+    /** Run once the scene's pictures are in (whenReady). */
+    private Runnable ready;
+    /** When a key was last pressed on Home: the minute's dissolve is skipped while someone is moving about. */
+    private static volatile long lastInput;
+
+    /** A key was pressed on Home. */
+    static void noteInput() {
+        lastInput = android.os.SystemClock.uptimeMillis();
+    }
+
     /** Drawn while the pictures are not in memory; Home's own background is taken away under the scene. */
     private final int background;
 
@@ -178,6 +211,7 @@ final class SceneView extends View {
         // are drawn as paths each time. As a GPU layer it is drawn once per change and is one textured quad after that.
         setLayerType(LAYER_TYPE_HARDWARE, null);
         background = cfg.backgroundColor;
+        animated = cfg.animations && !cfg.reducedMotion;
         off = cfg.scenesOff;
         wanted = cfg.scene == null || off.contains(cfg.scene) ? "" : cfg.scene;
         spec = pick(context, wanted, off);
@@ -231,6 +265,7 @@ final class SceneView extends View {
     void followTime() {
         if (!wanted.isEmpty() || poolNow(getContext(), off).contains(spec.id)) return;
         Spec now = byTime(getContext(), off);
+        if (now != spec) cover(snapshot());   // the old scene stays up until the new one is in, then dissolves
         spec = now;
         applySpec();
         release();
@@ -316,18 +351,73 @@ final class SceneView extends View {
         return new ColorMatrixColorFilter(cm);
     }
 
-    /** The weather line under the date ("Vilnius · 30°C · Sunny"); empty hides it. */
-    void setWeather(String line) {
+    /** The weather beside the date ("30° Sunny") and its small picture (0: none); an empty line hides both. */
+    void setWeather(String line, int iconRes) {
         weather = line == null ? "" : line;
+        weatherIcon = null;
+        if (iconRes != 0 && !weather.isEmpty()) {
+            try {
+                weatherIcon = getContext().getDrawable(iconRes);
+                if (weatherIcon != null) weatherIcon.setTint(0xEBFFFFFF);
+            } catch (RuntimeException ignored) {
+            }
+        }
         invalidate();
+    }
+
+    /**
+     * Home sits idle with its rows put away: another of the scenes for now dissolves in, so the picture is never still
+     * for long (kinder to the panel too). A pinned scene stays.
+     */
+    void next() {
+        boolean random = "random".equalsIgnoreCase(wanted);
+        if ((!wanted.isEmpty() && !random) || photo == null || loading) return;
+        java.util.List<String> pool = random ? enabled(off) : poolNow(getContext(), off);
+        if (pool.size() < 2) return;
+        String id = another(pool, spec.id);
+        cover(snapshot());
+        spec = spec(id);
+        applySpec();
+        release();
+        ensureLoaded();
     }
 
     private final Runnable minute = this::refresh;
 
     /** Time and date again, then once more on the next minute change, until pause(). */
     void refresh() {
-        time = DateTimeFormatter.ofPattern(is24 ? "HH:mm" : "h:mm").format(LocalTime.now());
-        date = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.getDefault()).format(LocalDate.now());
+        String now = DateTimeFormatter.ofPattern(is24 ? "HH:mm" : "h:mm").format(LocalTime.now());
+        date = DateTimeFormatter.ofPattern("EEE d MMM", Locale.getDefault()).format(LocalDate.now());
+        // The minute turned while Home sat still: the old digits dissolve into the new. With someone moving about
+        // the digits just change, so the dissolve's redraws never land on a focus move.
+        boolean dissolve = animated && photo != null && !time.isEmpty() && !now.equals(time) && isShown()
+                && android.os.SystemClock.uptimeMillis() - lastInput > 1500L;
+        if (clockAnim != null) clockAnim.cancel();
+        if (dissolve) {
+            prevTime = time;
+            time = now;
+            clockFade = 0f;
+            clockAnim = android.animation.ValueAnimator.ofFloat(0f, 1f);
+            clockAnim.setDuration(420L);
+            clockAnim.setInterpolator(Motion.MOVE);
+            clockAnim.addUpdateListener(a -> {
+                clockFade = (float) a.getAnimatedValue();
+                invalidate();
+            });
+            clockAnim.addListener(new android.animation.AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(android.animation.Animator animation) {
+                    prevTime = null;
+                    clockFade = 1f;
+                    invalidate();
+                }
+            });
+            clockAnim.start();
+        } else {
+            prevTime = null;
+            clockFade = 1f;
+            time = now;
+        }
         invalidate();
         ui.removeCallbacks(minute);
         ui.postDelayed(minute, 60_000L - System.currentTimeMillis() % 60_000L + 50L);
@@ -336,6 +426,67 @@ final class SceneView extends View {
     /** Home left the screen: no more ticks until refresh() is called again. */
     void pause() {
         ui.removeCallbacks(minute);
+    }
+
+    /**
+     * The view the dissolves are done with: a picture laid over the scene and faded out by the compositor, which
+     * costs no redraw of the scene. Home adds it just above the scene; without it scenes simply change. With
+     * {@code quietFirst} the first load fades nothing: Home is rebuilding and covers the whole of itself meanwhile.
+     */
+    void setFader(android.widget.ImageView view, boolean quietFirst) {
+        fader = view;
+        quietOnce = quietFirst;
+        if (fader != null) fader.setVisibility(GONE);
+    }
+
+    /** Runs {@code r} once the scene's pictures are in; at once when they already are. */
+    void whenReady(Runnable r) {
+        if (photo != null) r.run();
+        else ready = r;
+    }
+
+    /** What the scene shows now, as a picture; null before it has drawn. */
+    private Bitmap snapshot() {
+        int w = getWidth(), h = getHeight();
+        if (w == 0 || h == 0 || photo == null) return null;
+        try {
+            Bitmap b = Bitmap.createBitmap(w, h, Bitmap.Config.RGB_565);
+            draw(new Canvas(b));
+            return b;
+        } catch (OutOfMemoryError e) {
+            return null;
+        }
+    }
+
+    /** Lays {@code frame} over the scene (a null frame: Home's flat colour) until uncover(). */
+    private void cover(Bitmap frame) {
+        if (fader == null || !animated) {
+            if (frame != null) frame.recycle();
+            return;
+        }
+        fader.animate().cancel();
+        if (fadeBitmap != null && fadeBitmap != frame) fadeBitmap.recycle();
+        fadeBitmap = frame;
+        if (frame != null) fader.setImageBitmap(frame);
+        else fader.setImageDrawable(new android.graphics.drawable.ColorDrawable(background));
+        fader.setAlpha(1f);
+        fader.setVisibility(VISIBLE);
+    }
+
+    /** The scene's pictures are in: whatever covers it dissolves away. With nothing over it, it fades up from the flat colour. */
+    private void uncover() {
+        if (quietOnce) {
+            quietOnce = false;
+            return;
+        }
+        if (fader == null || !animated) return;
+        if (fader.getVisibility() != VISIBLE) cover(null);
+        fader.animate().alpha(0f).setStartDelay(60L).setDuration(520L).setInterpolator(Motion.MOVE).withEndAction(() -> {
+            fader.setVisibility(GONE);
+            fader.setImageDrawable(null);
+            if (fadeBitmap != null) fadeBitmap.recycle();
+            fadeBitmap = null;
+        }).start();
     }
 
     /** Decodes the pictures off the main thread when they are not in memory. */
@@ -361,6 +512,12 @@ final class SceneView extends View {
                 cutout = f;
                 glassShader = null;
                 invalidate();
+                uncover();
+                if (ready != null) {
+                    Runnable r = ready;
+                    ready = null;
+                    r.run();
+                }
                 if (p != null) {
                     accent = accentOf(p);
                     if (accentListener != null) accentListener.onAccent(accent);
@@ -438,10 +595,25 @@ final class SceneView extends View {
             c.drawColor(background);
             return;
         }
+        if (prevTime != null && clockFade < 1f) {
+            // The scene with the old minute, then the band the clock stands in again with the new one, let in by degrees.
+            drawScene(c, w, h, prevTime);
+            float s = w / 1920f;
+            int layer = c.saveLayerAlpha(0, (spec.top - 20) * s, w, (spec.top + BOX_BASELINE * spec.size + 30) * s,
+                    Math.round(clockFade * 255));
+            drawScene(c, w, h, time);
+            c.restoreToCount(layer);
+        } else {
+            drawScene(c, w, h, time);
+        }
+    }
+
+    /** The whole scene, with {@code shown} as its clock. */
+    private void drawScene(Canvas c, int w, int h, String shown) {
         float s = w / 1920f;
         dst.set(0, 0, w, h);
         c.drawBitmap(photo, null, dst, photoPaint);
-        drawClock(c, w, h, s);
+        drawClock(c, w, h, s, shown);
         if (cutout != null) drawCutout(c, s);
         if (spec.shade != null) {   // over the clock and the cut-out alike, so the cut-out has no edge in it
             if (shadeFor != h) {
@@ -480,20 +652,30 @@ final class SceneView extends View {
     }
 
     private void drawCaption(Canvas c, float s) {
-        String line = weather.isEmpty() ? date : date + "   ·   " + weather;
+        // "Sat 14 Nov   ·   [sun] 23° Clear": the date, then the weather's small picture and its short line.
+        String first = weather.isEmpty() ? date : date + "   \u00B7   ";
         caption.setTextSize(31 * s);
         caption.setShadowLayer(8 * s, 0, 2 * s, 0xB3000000);
+        caption.setTextAlign(Paint.Align.LEFT);
         float base = (spec.top - 12) * s;   // just above the digits, whatever height the scene puts them at
-        if (spec.left < 0) {
-            caption.setTextAlign(Paint.Align.CENTER);
-            c.drawText(line, getWidth() / 2f, base, caption);
-        } else {   // a clock set to one side: the line starts where its digits do
-            caption.setTextAlign(Paint.Align.LEFT);
-            c.drawText(line, spec.left * s, base, caption);
+        float icon = weatherIcon != null ? 30 * s : 0f, gap = weatherIcon != null ? 9 * s : 0f;
+        float firstW = caption.measureText(first);
+        float total = firstW + (weather.isEmpty() ? 0f : icon + gap + caption.measureText(weather));
+        // Centred over a centred clock; with a clock set to one side the line starts where its digits do.
+        float x = spec.left < 0 ? (getWidth() - total) / 2f : spec.left * s;
+        c.drawText(first, x, base, caption);
+        if (weather.isEmpty()) return;
+        x += firstW;
+        if (weatherIcon != null) {
+            int top = Math.round(base - icon * 0.84f);
+            weatherIcon.setBounds(Math.round(x), top, Math.round(x + icon), Math.round(top + icon));
+            weatherIcon.draw(c);
+            x += icon + gap;
         }
+        c.drawText(weather, x, base, caption);
     }
 
-    private void drawClock(Canvas c, int w, int h, float s) {
+    private void drawClock(Canvas c, int w, int h, float s, String time) {
         float digitH = BOX_DIGITS * spec.size * s;
         float size = digitH / digitEm;
         for (Paint p : new Paint[]{fill, rimFill, rim, sheen}) p.setTextSize(size);

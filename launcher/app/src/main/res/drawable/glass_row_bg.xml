@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Menu and settings rows: invisible at rest (they sit on a panel already), glass_focus under focus. -->
-<selector xmlns:android="http://schemas.android.com/apk/res/android" android:enterFadeDuration="@integer/motion_fast" android:exitFadeDuration="@integer/motion_fast">
-    <item android:state_focused="true" android:drawable="@drawable/glass_focus" />
-    <item android:drawable="@android:color/transparent" />
-</selector>

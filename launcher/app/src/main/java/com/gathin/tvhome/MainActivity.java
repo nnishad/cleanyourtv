@@ -485,7 +485,59 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      */
     static void refreshLive() {
         MainActivity home = live.get();
-        if (home != null && !home.isFinishing()) home.runOnUiThread(home::recreate);
+        if (home == null || home.isFinishing()) return;
+        home.runOnUiThread(() -> {
+            // What Home shows now is copied off the screen and handed to the Home that replaces it, which lays it over
+            // itself until its own rows and scene are in and then dissolves it away: a rebuild is a soft change, not
+            // a blink of empty rows.
+            if (home.reducedMotion || !home.animations || home.root.getWidth() == 0) {
+                home.recreate();
+                return;
+            }
+            try {
+                final android.graphics.Bitmap frame = android.graphics.Bitmap.createBitmap(home.root.getWidth(),
+                        home.root.getHeight(), android.graphics.Bitmap.Config.ARGB_8888);
+                android.view.PixelCopy.request(home.getWindow(), frame, result -> {
+                    if (carryFrame != null) carryFrame.recycle();
+                    carryFrame = result == android.view.PixelCopy.SUCCESS ? frame : null;
+                    if (!home.isFinishing() && !home.isDestroyed()) home.recreate();
+                }, new android.os.Handler(android.os.Looper.getMainLooper()));
+            } catch (RuntimeException | OutOfMemoryError e) {
+                home.recreate();
+            }
+        });
+    }
+
+    /** The last frame of the Home being rebuilt (refreshLive), for the Home that replaces it. */
+    private static android.graphics.Bitmap carryFrame;
+
+    /**
+     * This Home replaces one that was rebuilt for a settings change: the old Home's last frame lies over everything
+     * until the rows are laid out and the scene's pictures are in, then dissolves away.
+     */
+    private void coverRebuild() {
+        final android.graphics.Bitmap frame = carryFrame;
+        carryFrame = null;
+        if (frame == null) return;
+        final android.widget.ImageView cover = new android.widget.ImageView(this);
+        cover.setScaleType(android.widget.ImageView.ScaleType.FIT_XY);
+        cover.setImageBitmap(frame);
+        cover.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        root.addView(cover, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        final boolean[] done = {false};
+        final Runnable lift = () -> {
+            if (done[0]) return;
+            done[0] = true;
+            cover.animate().alpha(0f).setDuration(Motion.SLOW).setInterpolator(Motion.MOVE).withEndAction(() -> {
+                root.removeView(cover);
+                frame.recycle();
+            }).start();
+        };
+        // The scene's pictures first, then a moment for the rows to take their places; never longer than two seconds.
+        Runnable sceneIn = () -> root.postDelayed(lift, 260L);
+        if (sceneView != null) sceneView.whenReady(sceneIn);
+        else sceneIn.run();
+        root.postDelayed(lift, 2000L);
     }
 
     /** Reduced motion as the theme and config.xml set it, for other screens that animate. */
@@ -565,6 +617,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             sceneView = new SceneView(this, cfg);
             root.addView(sceneView, 0, new FrameLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            // Just above the scene, under everything else: what a changing scene dissolves out of (SceneView.setFader).
+            android.widget.ImageView sceneFader = new android.widget.ImageView(this);
+            sceneFader.setScaleType(android.widget.ImageView.ScaleType.FIT_XY);
+            sceneFader.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            root.addView(sceneFader, 1, new FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            sceneView.setFader(sceneFader, carryFrame != null);
             root.setBackground(null);   // the scene covers the screen (its own colour until the photo is in): one fill fewer a frame
             findViewById(R.id.leftBlock).setVisibility(View.INVISIBLE);
             findViewById(R.id.weather).setVisibility(View.GONE);
@@ -685,6 +744,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                         public void onCardFocused(String context) {
                             hideGlass();   // the dock's highlight belongs to a tile, not a card
                             showContext(context);
+                        }
+
+                        @Override
+                        public void onCardMenu(View card, Runnable remove) {
+                            showCardMenu(card, remove);
                         }
 
                     });
@@ -856,6 +920,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             });
         }
 
+        // The context line follows the rows as they scroll.
+        grid.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView rv, int dx, int dy) {
+                if (contextLine != null && !contextShown.isEmpty()) placeContext();
+            }
+        });
+
         // Keep the glass glued to its tile while the grid scrolls.
         grid.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
@@ -940,7 +1012,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         btnSettings.setOnClickListener(v -> {
             if (launcherSettingsButton) startActivityForResult(
-                    new Intent(this, LauncherSettingsActivity.class), LAUNCHER_SETTINGS_REQUEST);
+                    new Intent(this, CouchSettingsActivity.class), LAUNCHER_SETTINGS_REQUEST);
             else open(systemIntent(Settings.ACTION_SETTINGS));
         });
         btnReorder = findViewById(R.id.btnReorder);
@@ -1032,11 +1104,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         getWindow().getDecorView().getViewTreeObserver().addOnGlobalFocusChangeListener((oldF, newF) -> {
             boolean onTile = newF != null && newF.getId() == R.id.card;
             if (!onTile) hideGlass();
-            // The context line names a top button by its label (icon-only buttons keep it as their description).
+            // The context line names a top button only where the button does not say it itself: an icon-only one
+            // (the network's name beside the Wi-Fi icon), not "Inputs" beside Inputs, and not the gear.
             if (newF != null && newF.getParent() == topButtonsView) {
                 CharSequence name = newF.getContentDescription();
-                if ((name == null || name.length() == 0) && newF instanceof TextView) name = ((TextView) newF).getText();
-                showContext(name);
+                CharSequence shown = newF instanceof TextView ? ((TextView) newF).getText() : null;
+                boolean saysIt = shown != null && shown.length() > 0;
+                showContext(saysIt || newF == btnSettings || name == null ? "" : name);
             }
         });
 
@@ -1144,7 +1218,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private boolean openLauncherSettingsIfAsked(Intent intent) {
         if (intent == null || !ACTION_LAUNCHER_SETTINGS.equals(intent.getAction())) return false;
         setIntent(new Intent(Intent.ACTION_MAIN));
-        startActivityForResult(new Intent(this, LauncherSettingsActivity.class), LAUNCHER_SETTINGS_REQUEST);
+        startActivityForResult(new Intent(this, CouchSettingsActivity.class), LAUNCHER_SETTINGS_REQUEST);
         return true;
     }
 
@@ -1210,6 +1284,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             cameBack = false;
             arrive();
         }
+        coverRebuild();
         if (couchMenus) root.postDelayed(this::firstRunTips, 1500L);
         if (sceneView != null) {
             sceneView.followTime();     // evening came, or fog: the scene that goes with it
@@ -1271,15 +1346,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     /**
-     * Only "Reorder tiles" in Launcher settings still answers with a result: Home rebuilds (the saved choices are
+     * Only "Reorder apps" in Home settings still answers with a result: Home rebuilds (the saved choices are
      * reloaded) and then enters reorder mode. Every other change is picked up in onResume through the change count.
      */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == LAUNCHER_SETTINGS_REQUEST && resultCode == RESULT_OK
-                && data != null && data.getBooleanExtra(LauncherSettingsActivity.EXTRA_REORDER, false)) {
-            getIntent().putExtra(LauncherSettingsActivity.EXTRA_REORDER, true);
+                && data != null && data.getBooleanExtra(CouchSettingsActivity.EXTRA_REORDER, false)) {
+            getIntent().putExtra(CouchSettingsActivity.EXTRA_REORDER, true);
             // The old activity must not consume the pending action, or rebuild a second time in onResume.
             settingsRecreationPending = true;
             settingsRevision = settingsRevision();
@@ -1289,8 +1364,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     private void startPendingSettingsReorder() {
         if (settingsRecreationPending || !tilesReady || !hasWindowFocus() || isFinishing()
-                || !getIntent().getBooleanExtra(LauncherSettingsActivity.EXTRA_REORDER, false)) return;
-        getIntent().removeExtra(LauncherSettingsActivity.EXTRA_REORDER);
+                || !getIntent().getBooleanExtra(CouchSettingsActivity.EXTRA_REORDER, false)) return;
+        getIntent().removeExtra(CouchSettingsActivity.EXTRA_REORDER);
         toggleReorder();
     }
 
@@ -1421,6 +1496,63 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         hideGlass();
         rowsWrap.animate().alpha(0f).setDuration(500).start();
         topButtonsView.animate().alpha(0f).setDuration(500).start();
+        if (contextLine != null) showContext("");
+        root.removeCallbacks(turnScene);
+        root.postDelayed(turnScene, SCENE_TURN_MS);
+    }
+
+    /** With the rows put away and Home left alone, the scene changes for another every few minutes. */
+    private static final long SCENE_TURN_MS = 4 * 60_000L;
+    private final Runnable turnScene = new Runnable() {
+        @Override
+        public void run() {
+            if (!rowsHidden || !resumed || sceneView == null) return;
+            sceneView.next();
+            root.postDelayed(this, SCENE_TURN_MS);
+        }
+    };
+
+    private TextView hintPill;
+    private final Runnable hideHint = () -> {
+        if (hintPill != null) hintPill.animate().alpha(0f).setDuration(Motion.STANDARD).start();
+    };
+
+    /**
+     * A short instruction or notice in the launcher's own glass, at the top left on the top buttons' line, where it
+     * covers nothing: the system's toast sat over the dock, on the very tiles a reorder is about.
+     */
+    private void hint(int textRes, boolean longer) {
+        if (hintPill == null) {
+            hintPill = new TextView(this);
+            hintPill.setBackgroundResource(R.drawable.glass_panel);
+            hintPill.setTextColor(Color.WHITE);
+            hintPill.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, getResources().getDimension(R.dimen.type_body));
+            hintPill.setMaxWidth(Math.round(520 * density));
+            hintPill.setPadding(Math.round(18 * density), Math.round(11 * density), Math.round(18 * density), Math.round(11 * density));
+            try {
+                hintPill.setTypeface(getResources().getFont(R.font.outfit_medium));
+            } catch (RuntimeException ignored) {
+            }
+            hintPill.setAlpha(0f);
+            hintPill.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            lp.gravity = Gravity.TOP | Gravity.START;
+            root.addView(hintPill, lp);
+        }
+        int[] tb = new int[2], r = new int[2], g = new int[2];
+        topButtonsView.getLocationInWindow(tb);
+        root.getLocationInWindow(r);
+        grid.getLocationInWindow(g);
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) hintPill.getLayoutParams();
+        lp.topMargin = Math.max(0, tb[1] - r[1]);
+        lp.setMarginStart(Math.max(0, g[0] - r[0] + Math.round(Math.max(0f, contextBandLeft))));
+        hintPill.setLayoutParams(lp);
+        hintPill.setText(textRes);
+        root.removeCallbacks(hideHint);
+        hintPill.animate().cancel();
+        if (reducedMotion || !animations) hintPill.setAlpha(1f);
+        else hintPill.animate().alpha(1f).setDuration(Motion.STANDARD).setInterpolator(Motion.ENTER).start();
+        root.postDelayed(hideHint, longer ? 7000L : 3500L);
     }
 
     /** Builds the context line; it lines up with the dock band's right edge once that is known (alignContext). */
@@ -1463,13 +1595,20 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         root.getLocationInWindow(r);
         int h = contextLine.getMeasuredHeight();
         float y;
-        View heading = keepWatching != null && keepWatching.shown() ? keepWatching.heading() : null;
+        // Scrolled down into more apps, the Keep watching row has ridden up and faded out: its heading is no place
+        // for the line any more (it carried the line up over the top buttons).
+        boolean atDock = !grid.canScrollVertically(-1);
+        View heading = atDock && keepWatching != null && keepWatching.shown() ? keepWatching.heading() : null;
         if (heading != null) {
             int[] hd = new int[2];
             heading.getLocationInWindow(hd);
             y = hd[1] - r[1] + (heading.getHeight() - h) / 2f;
-        } else {
-            y = g[1] - r[1] + grid.getPaddingTop() - h - 16 * density;
+        } else {   // just above the topmost row of tiles on screen, never higher than under the top buttons
+            int rowTop = grid.getChildCount() > 0 && !atDock ? Math.max(0, grid.getChildAt(0).getTop()) : grid.getPaddingTop();
+            y = g[1] - r[1] + rowTop - h - 16 * density;
+            int[] tb = new int[2];
+            topButtonsView.getLocationInWindow(tb);
+            y = Math.max(y, tb[1] - r[1] + topButtonsView.getHeight() + 8 * density);
         }
         contextLine.setTranslationX(g[0] - r[0] + contextBandRight - contextLine.getMeasuredWidth() - 6 * density);
         contextLine.setTranslationY(y);
@@ -1585,6 +1724,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     private void showRows() {
         rowsHidden = false;
+        root.removeCallbacks(turnScene);
         rowsWrap.animate().alpha(1f).setDuration(150).start();
         topButtonsView.animate().alpha(1f).setDuration(150).start();
         View focused = getCurrentFocus();
@@ -1608,6 +1748,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         cancelHoldOk();
         root.removeCallbacks(showIdleClock);
         root.removeCallbacks(hideRows);
+        root.removeCallbacks(turnScene);
         root.removeCallbacks(idleDim);
         if (idleDimmed) idleUndim();
         if (rowsHidden) {   // leaving Home: it comes back with its rows
@@ -1734,6 +1875,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      */
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
+        SceneView.noteInput();
         // Vendor keys (TCL Netflix button, 4062) never reach the key services, only the focused window, so their
         // "hold:" entries run here too or nowhere. Only while resumed: onPause releases Home's holds, and a DOWN
         // taken after that would arm one nothing releases.
@@ -1829,7 +1971,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         if (!beginReorder()) return;
         focusTile(Math.max(0, Math.min(lastFocused, adapter.movableCount() - 1)));
-        Toast.makeText(this, R.string.reorder_hint, Toast.LENGTH_LONG).show();
+        hint(R.string.reorder_hint, true);
     }
 
     /** The start shared by reorder and edit-dock mode. False when there is nothing to move. */
@@ -1855,7 +1997,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         dockEditing = true;
         dockEditSlot = -1;
         focusTile(0);
-        Toast.makeText(this, R.string.dock_edit_hint, Toast.LENGTH_LONG).show();
+        hint(R.string.dock_edit_hint, true);
     }
 
     /**
@@ -1899,7 +2041,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                         dockEditSlot = pos;
                         dimOthers();
                         focusTile(Math.min(COLUMNS, n - 1));
-                        Toast.makeText(this, R.string.dock_edit_pick_app, Toast.LENGTH_LONG).show();
+                        hint(R.string.dock_edit_pick_app, true);
                     }
                 } else if (pos < n) {
                     swapIntoDock(dockEditSlot, pos);
@@ -1926,11 +2068,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             dockEditSlot = pos;
             dimOthers();
             focusTile(Math.min(COLUMNS, n - 1));
-            Toast.makeText(this, R.string.dock_edit_pick_app, Toast.LENGTH_LONG).show();
+            hint(R.string.dock_edit_pick_app, true);
         } else {
             dockEditAppKey = key;
             focusTile(0);
-            Toast.makeText(this, R.string.dock_edit_pick_place, Toast.LENGTH_LONG).show();
+            hint(R.string.dock_edit_pick_place, true);
         }
     }
 
@@ -2006,7 +2148,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (Order.save(Order.file(this), order)) {
                 adapter.setSavedOrder(Order.ranks(order, dockApps), Order.docked(order, dockApps));
             } else {
-                Toast.makeText(this, R.string.reorder_not_saved, Toast.LENGTH_SHORT).show();
+                hint(R.string.reorder_not_saved, false);
             }
         }
         if (fillDockLeavesSlots) reloadTiles();   // the empty dock slots left out while reordering come back
@@ -2600,10 +2742,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private void showWeather(Weather.Reading r) {
         if (r == null || weather == null) return;
         if (sceneView != null) {
-            sceneView.setWeather(Weather.line(weatherPlace, r));
+            sceneView.setWeather(Weather.brief(this, r), Weather.icon(r));
             return;
         }
-        weather.setText(Weather.line(weatherPlace, r));
+        weather.setText(Weather.line(this, weatherPlace, r));
         weather.setVisibility(View.VISIBLE);
     }
 
@@ -3573,13 +3715,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         return SystemSettings.intent(this, standardAction);
     }
 
-    /** Hides the Inputs pill when it would have nothing to list: streaming boxes have no HDMI-in, AV or tuner. */
+    /**
+     * Hides the Inputs pill when it would have nothing to list: streaming boxes have no HDMI-in, AV or tuner. With
+     * couch_menus the list always ends with Bluetooth and Network, so there the pill is always shown.
+     */
     private void updateInputsButton() {
         if (!showInputsPill) {
             btnInputs.setVisibility(View.GONE);
             return;
         }
-        boolean any = liveTvIntent() != null || !sourcePanelService.isEmpty()
+        boolean any = couchMenus || liveTvIntent() != null || !sourcePanelService.isEmpty()
                 || (coocaaSources && !CoocaaSources.list(this).isEmpty());
         TvInputManager tim = (TvInputManager) getSystemService(TV_INPUT_SERVICE);
         if (!any && tim != null) {
@@ -3665,7 +3810,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             }
             startService(i);
         } catch (Exception e) {
-            Toast.makeText(this, R.string.not_available, Toast.LENGTH_SHORT).show();
+            hint(R.string.not_available, false);
         }
     }
 
@@ -3674,7 +3819,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         try {
             startActivity(i);
         } catch (ActivityNotFoundException | SecurityException e) {
-            Toast.makeText(this, R.string.not_available, Toast.LENGTH_SHORT).show();
+            hint(R.string.not_available, false);
         }
     }
 
@@ -3747,7 +3892,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             return;
         } catch (ActivityNotFoundException | SecurityException e) {
             if (inputAction.isEmpty()) {
-                Toast.makeText(this, R.string.not_available, Toast.LENGTH_SHORT).show();
+                hint(R.string.not_available, false);
                 return;
             }
         }
@@ -3915,7 +4060,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                         : "VOD".equals(s.name) ? R.drawable.ic_livetv : R.drawable.ic_av;
                 addInputRow(rows, popup, icon, s.label, -1, () -> {
                     if (!CoocaaSources.open(this, s)) {
-                        Toast.makeText(this, R.string.not_available, Toast.LENGTH_SHORT).show();
+                        hint(R.string.not_available, false);
                     }
                 });
             }
@@ -3963,7 +4108,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                     () -> open(systemIntent(Settings.ACTION_WIFI_SETTINGS)));
         }
         if (rows.getChildCount() == 0) {
-            Toast.makeText(this, R.string.no_inputs, Toast.LENGTH_SHORT).show();
+            hint(R.string.no_inputs, false);
             return;
         }
 
@@ -4101,7 +4246,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         addInputRow(rows, popup, R.drawable.ic_swap_vert, getString(R.string.reorder), -1, this::toggleReorder);
         if (launcherSettingsButton) {
             addInputRow(rows, popup, R.drawable.ic_home_settings_pill, getString(R.string.launcher_settings), -1,
-                    () -> startActivityForResult(new Intent(this, LauncherSettingsActivity.class), LAUNCHER_SETTINGS_REQUEST));
+                    () -> startActivityForResult(new Intent(this, CouchSettingsActivity.class), LAUNCHER_SETTINGS_REQUEST));
         } else {
             addInputRow(rows, popup, R.drawable.ic_settings, getString(R.string.settings), -1,
                     () -> open(systemIntent(Settings.ACTION_SETTINGS)));
@@ -4149,7 +4294,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         LinearLayout rows = panel.findViewById(R.id.rows);
         PopupWindow popup = glassPopup(panel, (int) (200 * density));
         if (!launcherSettingsButton) addSettingsMenuRow(rows, popup, R.string.launcher_settings, () -> startActivityForResult(
-                new Intent(this, LauncherSettingsActivity.class), LAUNCHER_SETTINGS_REQUEST));
+                new Intent(this, CouchSettingsActivity.class), LAUNCHER_SETTINGS_REQUEST));
         // Firmware that ships its own settings app next to the AOSP one (Xiaomi China is one): the
         // vendor app holds pages the AOSP settings has no row for, such as Account & Security with
         // the ADB switch. Offered here only while one of them is installed.
@@ -4287,11 +4432,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (at < 0) return;
             focusTile(at);
             pickUp(at);
-            Toast.makeText(this, R.string.reorder_hint, Toast.LENGTH_LONG).show();
+            hint(R.string.reorder_hint, true);
         });
         if (appLibraryEnabled) addSettingsMenuRow(rows, popup, R.string.library_remove_shortcut, () -> {
             if (LibraryApps.save(this, pkg, false)) reloadApps(false);
-            else Toast.makeText(this, R.string.library_save_failed, Toast.LENGTH_LONG).show();
+            else hint(R.string.library_save_failed, true);
         });
         // Some firmware has no App info page at all; a row that only toasts "can't open" helps nobody.
         Intent info = SystemSettings.appInfo(this, pkg);
@@ -4313,6 +4458,23 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             panel.animate().alpha(1f).scaleY(1f).translationY(0f).setDuration(220)
                     .setInterpolator(new android.view.animation.DecelerateInterpolator(1.6f)).start();
         }
+        rows.getChildAt(0).requestFocus();
+    }
+
+    /** Hold OK on a Keep watching card: one row, to take the show off the row. */
+    private void showCardMenu(View card, Runnable remove) {
+        View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
+        LinearLayout rows = panel.findViewById(R.id.rows);
+        PopupWindow popup = glassPopup(panel, (int) (340 * density));
+        addSettingsMenuRow(rows, popup, R.string.kw_remove, () -> {
+            remove.run();
+            hint(R.string.kw_removed, false);
+            // The card is gone: focus goes to the row's first card, or to the dock when the row is empty now.
+            root.postDelayed(() -> {
+                if (keepWatching == null || !keepWatching.focusFirst()) focusTile(Math.max(0, lastFocused));
+            }, 250L);
+        });
+        dropIn(popup, panel, card, Gravity.START);
         rows.getChildAt(0).requestFocus();
     }
 
@@ -4437,7 +4599,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private void decideCard(Cards.Card card, boolean show) {
         boolean saved = CardFeature.run(() -> Cards.decide(Cards.storeFile(this), card, show), false);
         if (!saved) {
-            Toast.makeText(this, R.string.card_not_saved, Toast.LENGTH_SHORT).show();
+            hint(R.string.card_not_saved, false);
             promptsPaused = true;
         }
         reloadTiles();
@@ -4446,7 +4608,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** Dropdown under the Settings pill (hold OK): every discovered card, its package and key; OK toggles Shown and Hidden. */
     private void showModuleCards() {
         if (cards.isEmpty() || !CardFeature.working()) {
-            Toast.makeText(this, R.string.no_module_cards, Toast.LENGTH_SHORT).show();
+            hint(R.string.no_module_cards, false);
             return;
         }
         CardFeature.run(() -> {
