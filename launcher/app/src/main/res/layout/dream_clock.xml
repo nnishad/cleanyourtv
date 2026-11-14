@@ -31,9 +31,8 @@
                 android:format12Hour="h:mm"
                 android:format24Hour="HH:mm"
                 android:textColor="@color/text_primary"
-                android:textSize="160sp"
-                android:fontFamily="@font/antonio_light"
-                android:letterSpacing="-0.04"
+                android:textSize="187sp"
+                android:fontFamily="@font/instrument_serif"
                 android:includeFontPadding="false" />
 
             <TextClock

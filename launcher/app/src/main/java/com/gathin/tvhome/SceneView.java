@@ -150,6 +150,14 @@ final class SceneView extends View {
     private final Paint caption = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Rect dst = new Rect();
     private final Rect digits = new Rect();
+    /**
+     * The box every scene's clock was placed for (spec.top and spec.size): digits 0.87 size tall with their baseline
+     * 0.9175 size below top, as couch-tv's Antonio sat in its CSS line box. Any clock face is scaled into that box, so
+     * the scenery that crosses the digits still crosses them where it was planned to.
+     */
+    private static final float BOX_DIGITS = 0.87f, BOX_BASELINE = 0.9175f;
+    /** The clock face's digit height per unit of text size. */
+    private final float digitEm;
     private final Matrix glassMatrix = new Matrix();
     private Bitmap photo, glass, cutout;
     private BitmapShader glassShader;
@@ -172,21 +180,21 @@ final class SceneView extends View {
         spec = pick(context, wanted);
         time = date = "";
         is24 = ClockFormat.is24(context, cfg.clockFormat);
-        Typeface antonio = null, outfit = null;
+        Typeface serif = null, outfit = null;
         try {
-            antonio = getResources().getFont(R.font.antonio_light);
+            serif = getResources().getFont(R.font.instrument_serif);
         } catch (RuntimeException ignored) {
         }
         try {
             outfit = getResources().getFont(R.font.outfit_medium);
         } catch (RuntimeException ignored) {
         }
-        clockFace = antonio != null ? antonio : Typeface.create("sans-serif-light", Typeface.NORMAL);
+        clockFace = serif != null ? serif : Typeface.create("serif", Typeface.NORMAL);
         captionFace = outfit != null ? outfit : Typeface.DEFAULT;
-        for (Paint p : new Paint[]{fill, rimFill, rim, sheen}) {
-            p.setTypeface(clockFace);
-            p.setLetterSpacing(-0.02f);
-        }
+        for (Paint p : new Paint[]{fill, rimFill, rim, sheen}) p.setTypeface(clockFace);
+        fill.setTextSize(1000f);
+        fill.getTextBounds("0123456789", 0, 10, digits);
+        digitEm = digits.height() / 1000f;
         rim.setStyle(Paint.Style.STROKE);
         applySpec();
         caption.setTypeface(captionFace);
@@ -434,7 +442,8 @@ final class SceneView extends View {
     }
 
     private void drawClock(Canvas c, int w, int h, float s) {
-        float size = spec.size * s;
+        float digitH = BOX_DIGITS * spec.size * s;
+        float size = digitH / digitEm;
         for (Paint p : new Paint[]{fill, rimFill, rim, sheen}) p.setTextSize(size);
         rim.setStrokeWidth(Math.max(1f, 1.44f * s));
         if (glass != null && glassShader == null) {
@@ -451,17 +460,15 @@ final class SceneView extends View {
             fill.getTextBounds(time, 0, time.length(), digits);
             x = spec.left * s - digits.left;
         }
-        float lineHeight = 0.82f * size;
-        Paint.FontMetrics fm = fill.getFontMetrics();
-        float base = spec.top * s + lineHeight / 2f - (fm.ascent + fm.descent) / 2f;   // a CSS line box centres its text
+        float base = (spec.top + BOX_BASELINE * spec.size) * s;
         c.drawText(time, x, base, fill);
         if (spec.rimFill != 0) c.drawText(time, x, base, rimFill);
         c.drawText(time, x, base, rim);
         if (spec.sheen) {   // linear-gradient(160deg, .55, 0 at 38%, 0 at 70%, .22) clipped to the digits
-            float top = spec.top * s, bottom = top + lineHeight;
+            float top = base - digitH, bottom = base;
             double a = Math.toRadians(160);
             float dx = (float) Math.sin(a), dy = (float) -Math.cos(a);
-            float bw = tw, bh = lineHeight;
+            float bw = tw, bh = digitH;
             float len = Math.abs(bw * dx) + Math.abs(bh * dy);
             float cx = x + bw / 2f, cy = (top + bottom) / 2f;
             sheen.setShader(new LinearGradient(cx - dx * len / 2f, cy - dy * len / 2f, cx + dx * len / 2f, cy + dy * len / 2f,
