@@ -236,9 +236,6 @@
     <string name="gear_tv_note">Wi-Fi, зображення, звук та решта</string>
     <string name="inputs_bluetooth">Bluetooth</string>
     <string name="inputs_network">Мережа</string>
-    <string name="tip_move">Порада: утримуйте OK на застосунку, щоб перемістити його чи прибрати з головного екрана</string>
-    <string name="tip_up">Порада: натисніть «Вгору» від застосунків, щоб відкрити «Продовжити перегляд»</string>
-    <string name="tip_gear">Порада: шестерня відкриває налаштування головного екрана й ТБ</string>
     <string name="kw_min_left">Залишилося %1$d хв</string>
     <string name="wx_sunny">Сонячно</string>
     <string name="wx_clear">Ясно</string>

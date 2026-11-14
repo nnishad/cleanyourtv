@@ -233,9 +233,6 @@
     <string name="gear_tv_note">Wi-Fi, imagem, som e o resto da TV</string>
     <string name="inputs_bluetooth">Bluetooth</string>
     <string name="inputs_network">Rede</string>
-    <string name="tip_move">Dica: segure OK em um app para movê-lo ou tirá-lo da tela inicial</string>
-    <string name="tip_up">Dica: pressione Para cima nos apps para ver Continuar assistindo</string>
-    <string name="tip_gear">Dica: a engrenagem abre as configurações da tela inicial e da TV</string>
     <string name="kw_min_left">%1$d min restantes</string>
     <string name="wx_sunny">Ensolarado</string>
     <string name="wx_clear">Céu limpo</string>

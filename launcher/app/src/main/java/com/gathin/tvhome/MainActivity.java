@@ -1289,7 +1289,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             arrive();
         }
         coverRebuild();
-        if (couchMenus) root.postDelayed(this::firstRunTips, 1500L);
         if (sceneView != null) {
             sceneView.followTime();     // evening came, or fog: the scene that goes with it
             sceneView.ensureLoaded();   // dropped by onTrimMemory
@@ -1640,28 +1639,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         contextLine.setAlpha(0f);
         contextLine.animate().alpha(1f).setDuration(Motion.STANDARD).setInterpolator(Motion.ENTER).start();
-    }
-
-    /**
-     * The first time Home shows (design/REVAMP-PLAN.md 3.6): three one-line tips on the context line, five seconds
-     * each, then never again. A key press on the way does not stop them; focus changes simply take the line over.
-     */
-    private void firstRunTips() {
-        SharedPreferences prefs = getSharedPreferences("revamp", MODE_PRIVATE);
-        if (!resumed || contextLine == null || prefs.getBoolean("tips_shown", false)) return;
-        prefs.edit().putBoolean("tips_shown", true).apply();
-        int[] tips = {R.string.tip_move, R.string.tip_up, R.string.tip_gear};
-        for (int i = 0; i < tips.length; i++) {
-            final int tip = tips[i];
-            root.postDelayed(() -> {
-                if (resumed) showContext(getString(tip));
-            }, i * 5000L);
-        }
-        root.postDelayed(() -> {   // back to naming what has focus
-            if (!resumed) return;
-            int tile = focusedTilePosition();
-            showContext(tile >= 0 ? adapter.labelAt(tile) : "");
-        }, tips.length * 5000L);
     }
 
     /** Home left for an app: the next return plays the arrival. */

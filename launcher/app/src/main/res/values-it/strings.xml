@@ -230,9 +230,6 @@
     <string name="gear_tv_note">Wi-Fi, immagine, audio e il resto della TV</string>
     <string name="inputs_bluetooth">Bluetooth</string>
     <string name="inputs_network">Rete</string>
-    <string name="tip_move">Suggerimento: tieni premuto OK su un\'app per spostarla o toglierla da Home</string>
-    <string name="tip_up">Suggerimento: premi Su dalle app per Continua a guardare</string>
-    <string name="tip_gear">Suggerimento: l\'ingranaggio apre le impostazioni di Home e della TV</string>
     <string name="kw_min_left">%1$d min rimanenti</string>
     <string name="wx_sunny">Soleggiato</string>
     <string name="wx_clear">Sereno</string>

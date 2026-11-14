@@ -189,9 +189,6 @@
     <string name="gear_tv_note">Wi-Fi, ছবি, সাউন্ড ও টিভির বাকি সব</string>
     <string name="inputs_bluetooth">Bluetooth</string>
     <string name="inputs_network">নেটওয়ার্ক</string>
-    <string name="tip_move">টিপ: অ্যাপ সরাতে বা হোম থেকে বাদ দিতে তার ওপর OK চেপে ধরে রাখুন</string>
-    <string name="tip_up">টিপ: দেখা চালিয়ে যান পেতে অ্যাপ থেকে Up চাপুন</string>
-    <string name="tip_gear">টিপ: গিয়ার দিয়ে হোম সেটিংস ও টিভি সেটিংস খোলে</string>
     <string name="kw_min_left">%1$d মিনিট বাকি</string>
     <string name="wx_sunny">রৌদ্রোজ্জ্বল</string>
     <string name="wx_clear">পরিষ্কার</string>

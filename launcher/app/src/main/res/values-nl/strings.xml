@@ -196,9 +196,6 @@
     <string name="gear_tv_note">Wi-Fi, beeld, geluid en de rest van de tv</string>
     <string name="inputs_bluetooth">Bluetooth</string>
     <string name="inputs_network">Netwerk</string>
-    <string name="tip_move">Tip: houd OK ingedrukt op een app om hem te verplaatsen of van Home te halen</string>
-    <string name="tip_up">Tip: druk vanaf de apps op Omhoog voor Verder kijken</string>
-    <string name="tip_gear">Tip: het tandwiel opent Home-instellingen en Tv-instellingen</string>
     <string name="kw_min_left">Nog %1$d min</string>
     <string name="wx_sunny">Zonnig</string>
     <string name="wx_clear">Helder</string>

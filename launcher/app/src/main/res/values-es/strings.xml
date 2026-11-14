@@ -230,9 +230,6 @@
     <string name="gear_tv_note">Wi-Fi, imagen, sonido y el resto del televisor</string>
     <string name="inputs_bluetooth">Bluetooth</string>
     <string name="inputs_network">Red</string>
-    <string name="tip_move">Consejo: mantén OK sobre una app para moverla o quitarla de Inicio</string>
-    <string name="tip_up">Consejo: pulsa Arriba desde las apps para ir a Seguir viendo</string>
-    <string name="tip_gear">Consejo: el engranaje abre los ajustes de Inicio y del televisor</string>
     <string name="kw_min_left">Quedan %1$d min</string>
     <string name="wx_sunny">Soleado</string>
     <string name="wx_clear">Despejado</string>

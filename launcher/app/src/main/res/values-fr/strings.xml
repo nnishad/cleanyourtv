@@ -185,9 +185,6 @@
     <string name="gear_tv_note">Wi-Fi, image, son et le reste du téléviseur</string>
     <string name="inputs_bluetooth">Bluetooth</string>
     <string name="inputs_network">Réseau</string>
-    <string name="tip_move">Astuce : maintenez OK sur une appli pour la déplacer ou la retirer de l\'accueil</string>
-    <string name="tip_up">Astuce : appuyez sur Haut depuis les applis pour Continuer à regarder</string>
-    <string name="tip_gear">Astuce : la roue dentée ouvre les paramètres de l\'accueil et du téléviseur</string>
     <string name="kw_min_left">%1$d min restantes</string>
     <string name="wx_sunny">Ensoleillé</string>
     <string name="wx_clear">Dégagé</string>

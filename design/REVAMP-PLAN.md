@@ -308,3 +308,8 @@ pressing keys on the emulator during two of the idle runs, which were repeated.
 - **Known:** in Arabic and Hebrew the text is right-aligned but the sheet's icons and switches keep their sides,
   as upstream's own screens do (the app does not opt into full RTL layout).
 
+## 11. Tips removed (2026-11-14)
+
+The three first-run tips on the context line (`firstRunTips`, `tip_move`, `tip_up`, `tip_gear`) are gone, from the code
+and from every language, at the user's request. Sections 6 and 10 still mention them as they were then.
+
