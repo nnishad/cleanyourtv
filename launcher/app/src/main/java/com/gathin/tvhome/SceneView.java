@@ -45,9 +45,19 @@ final class SceneView extends View {
         final boolean sheen;
         final int[] shade;
         final float[] shadeAt;
+        /** The photo is "<id>.webp", stored losslessly, and the cut-out is the photo through "<id>-mask.png"'s alpha. */
+        final boolean lossless;
 
         Spec(String id, boolean cutout, float top, float size, float left, float fillBright, float fillSat,
              float fillAlpha, float photoBright, int rimStroke, int rimFill, boolean sheen, int[] shade, float[] shadeAt) {
+            this(id, cutout, top, size, left, fillBright, fillSat, fillAlpha, photoBright, rimStroke, rimFill, sheen, shade,
+                    shadeAt, false);
+        }
+
+        Spec(String id, boolean cutout, float top, float size, float left, float fillBright, float fillSat,
+             float fillAlpha, float photoBright, int rimStroke, int rimFill, boolean sheen, int[] shade, float[] shadeAt,
+             boolean lossless) {
+            this.lossless = lossless;
             this.id = id;
             this.cutout = cutout;
             this.top = top;
@@ -66,6 +76,8 @@ final class SceneView extends View {
     }
 
     private static final int WHITE_RIM = 0x8CFFFFFF, WHITE_FILL = 0x1AFFFFFF;
+    /** A dark band at the top so the white top buttons and the date read on a pale sky. */
+    private static final int[] BRIGHT_SKY = {0x59000000, 0x00000000};
     private static final Spec[] SPECS = {
             // Night: the clock behind the peak, pink glass
             new Spec("night", true, 150, 400, -1, 1.15f, 1.2f, 0.9f, 0.86f, 0x80FFD7E1, 0x0FFFC8D7, true, null, null),
@@ -80,6 +92,38 @@ final class SceneView extends View {
             // Rainforest dawn: warm light at the top, the clock low enough for the ridges to cross it
             new Spec("dawn", true, 230, 400, -1, 1f, 1f, 1f, 1f, WHITE_RIM, WHITE_FILL, true,
                     new int[]{0x6B321C0C, 0x00321C0C}, new float[]{0f, 0.55f}),
+            // The landscapes below: 16:9 crops of the photos at the panel's 1920x1080, stored losslessly. Each clock
+            // sits on the depth plane found with a depth map, so the nearer scenery crosses the bottom of the digits.
+            // Misty valley: the peaks under the cloud rise into the digits
+            scene("valley", 160, 440, 1f, BRIGHT_SKY),
+            // Arch bridge: the clock inside the circle of the arch and its reflection, the arch and pillar in front
+            scene("bridge", 250, 380, 1.2f, null),
+            // Alpine lake: the peaks rise into the digits from below
+            scene("alpine", 140, 440, 1f, BRIGHT_SKY),
+            // Ember ridges: a sunrise haze; the snowy ridge line crosses the digits
+            scene("ember", 190, 400, 1f, null),
+            // Highland valley: the clock in the clouds, the ridge's peaks in front
+            scene("highland", 170, 420, 1f, BRIGHT_SKY),
+            // Mountain lake: the clock in the clouds over the valley, the slopes in front at both ends
+            scene("lake", 180, 440, 1f, BRIGHT_SKY),
+            // Snow ridge: behind the near snowy ridge and its trees, in front of the far range
+            scene("snow", 170, 440, 1f, BRIGHT_SKY),
+            // City at dusk: the towers rise into the digits
+            scene("city", 230, 380, 1f, null),
+    };
+
+    private static Spec scene(String id, float top, float size, float fillBright, int[] shade) {
+        return new Spec(id, true, top, size, -1, fillBright, 1f, 1f, 1f, WHITE_RIM, WHITE_FILL, true, shade,
+                shade == null ? null : new float[]{0f, 0.3f}, true);
+    }
+
+    /** Scenes for each part of the day; following the time shows one of them, and keeps it until the part changes. */
+    private static final String[][] BY_TIME = {
+            {"dawn", "ember"},                                                  // 5 to 9
+            {"water", "alpine", "lake", "highland", "snow", "bridge"},          // 9 to 16
+            {"golden", "city"},                                                 // 16 to 19
+            {"night"},                                                          // 19 to 5
+            {"fog", "valley"},                                                  // fog or mist reported
     };
 
     private final Handler ui = new Handler(Looper.getMainLooper());
@@ -173,26 +217,36 @@ final class SceneView extends View {
      * fog came down), that one comes in. A pinned or random scene stays.
      */
     void followTime() {
-        if (!wanted.isEmpty()) return;
+        if (!wanted.isEmpty() || partOf(spec.id) == partNow(getContext())) return;
         Spec now = byTime(getContext());
-        if (now == spec) return;
         spec = now;
         applySpec();
         release();
         ensureLoaded();
     }
 
-    /** Dawn in the morning, Waterline by day, Golden hour in the evening, Night at night; Fog when it is foggy. */
-    private static Spec byTime(Context ctx) {
+    /** The part of the day now, as an index into BY_TIME: fog when it is foggy, else by the hour. */
+    private static int partNow(Context ctx) {
         Weather.Reading r = Weather.cached(ctx);
-        String id;
-        if (r != null && (r.code == 45 || r.code == 48) && System.currentTimeMillis() - r.at < 3 * 3600_000L) {
-            id = "fog";
-        } else {
-            int h = java.time.LocalTime.now().getHour();
-            id = h >= 5 && h < 9 ? "dawn" : h >= 9 && h < 16 ? "water" : h >= 16 && h < 19 ? "golden" : "night";
-        }
-        for (Spec s : SPECS) if (s.id.equals(id)) return s;
+        if (r != null && (r.code == 45 || r.code == 48) && System.currentTimeMillis() - r.at < 3 * 3600_000L) return 4;
+        int h = java.time.LocalTime.now().getHour();
+        return h >= 5 && h < 9 ? 0 : h >= 9 && h < 16 ? 1 : h >= 16 && h < 19 ? 2 : 3;
+    }
+
+    private static int partOf(String id) {
+        for (int p = 0; p < BY_TIME.length; p++) for (String s : BY_TIME[p]) if (s.equals(id)) return p;
+        return -1;
+    }
+
+    /** One of the scenes for this part of the day, not the one shown last time when there is a choice. */
+    private static Spec byTime(Context ctx) {
+        String[] ids = BY_TIME[partNow(ctx)];
+        SharedPreferences prefs = ctx.getSharedPreferences("scene_state", Context.MODE_PRIVATE);
+        String last = prefs.getString("last_timed", "");
+        int next = new Random().nextInt(ids.length);
+        if (ids.length > 1 && ids[next].equals(last)) next = (next + 1) % ids.length;
+        prefs.edit().putString("last_timed", ids[next]).apply();
+        for (Spec s : SPECS) if (s.id.equals(ids[next])) return s;
         return SPECS[0];
     }
 
@@ -251,9 +305,11 @@ final class SceneView extends View {
         loading = true;
         final Context ctx = getContext().getApplicationContext();
         io.execute(() -> {
-            Bitmap p = decode(ctx, "scenes/" + spec.id + ".jpg", Bitmap.Config.RGB_565, 1);
+            // Full colour for the photo: 16-bit colour bands in smooth skies (an orange haze, a dusk gradient).
+            Bitmap p = decode(ctx, "scenes/" + spec.id + (spec.lossless ? ".webp" : ".jpg"), Bitmap.Config.ARGB_8888, 1);
             Bitmap g = decode(ctx, "scenes/" + spec.id + "-glass.jpg", Bitmap.Config.RGB_565, 2);   // a blur: half size is plenty
-            Bitmap f = spec.cutout ? decode(ctx, "scenes/" + spec.id + "-fg.webp", Bitmap.Config.ARGB_8888, 1) : null;
+            Bitmap f = !spec.cutout ? null : spec.lossless ? throughMask(ctx, p, "scenes/" + spec.id + "-mask.png")
+                    : decode(ctx, "scenes/" + spec.id + "-fg.webp", Bitmap.Config.ARGB_8888, 1);
             ui.post(() -> {
                 loading = false;
                 if (released) {
@@ -273,7 +329,7 @@ final class SceneView extends View {
         });
     }
 
-    /** Memory pressure while Home is not on screen: give the pictures back (about 14 MB). */
+    /** Memory pressure while Home is not on screen: give the pictures back (about 18 MB). */
     void release() {
         released = true;
         Bitmap[] all = {photo, glass, cutout};
@@ -306,6 +362,21 @@ final class SceneView extends View {
         if (bins[best] < 1e-3) return 0xFF8FD3FF;
         float hue = (float) (hueSum[best] / bins[best]);
         return android.graphics.Color.HSVToColor(new float[]{hue, 0.45f, 1f});
+    }
+
+    /** The cut-out: the photo's own pixels wherever the mask is opaque, so it stays as exact as the photo. */
+    private static Bitmap throughMask(Context ctx, Bitmap photo, String maskPath) {
+        if (photo == null) return null;
+        Bitmap mask = decode(ctx, maskPath, Bitmap.Config.ARGB_8888, 1);
+        if (mask == null) return null;
+        Bitmap out = Bitmap.createBitmap(photo.getWidth(), photo.getHeight(), Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(out);
+        c.drawBitmap(mask, null, new Rect(0, 0, out.getWidth(), out.getHeight()), null);
+        Paint in = new Paint();
+        in.setXfermode(new android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.SRC_IN));
+        c.drawBitmap(photo, 0, 0, in);
+        mask.recycle();
+        return out;
     }
 
     private static Bitmap decode(Context ctx, String path, Bitmap.Config config, int sample) {

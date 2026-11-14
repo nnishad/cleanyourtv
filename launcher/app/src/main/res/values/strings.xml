@@ -177,6 +177,14 @@
     <string name="hs_scene_water">Waterline</string>
     <string name="hs_scene_fog">Fog</string>
     <string name="hs_scene_dawn">Dawn</string>
+    <string name="hs_scene_valley">Misty valley</string>
+    <string name="hs_scene_bridge">Arch bridge</string>
+    <string name="hs_scene_alpine">Alpine lake</string>
+    <string name="hs_scene_ember">Ember ridges</string>
+    <string name="hs_scene_highland">Highland valley</string>
+    <string name="hs_scene_lake">Mountain lake</string>
+    <string name="hs_scene_snow">Snow ridge</string>
+    <string name="hs_scene_city">City at dusk</string>
     <string name="hs_clock_tv">As the TV is set</string>
     <string name="hs_clock_12">12-hour</string>
     <string name="hs_clock_24">24-hour</string>
