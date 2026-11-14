@@ -66,22 +66,20 @@ final class SceneView extends View {
     }
 
     private static final int WHITE_RIM = 0x8CFFFFFF, WHITE_FILL = 0x1AFFFFFF;
-    /** Ten bright destinations (assets/scenes/CREDITS.txt): photo, clock place and size at 1920 px, and whether the
-     *  scenery cut-out is drawn over the digits. Placed for depth, as on a phone's lock screen: the scenery rises in
-     *  front of the lower third of the digits and never touches their top 60 %. A light top band keeps the date readable over a bright sky. */
-    private static final int[] TOP_SHADE = {0x40000000, 0x00000000};
-    private static final float[] TOP_SHADE_AT = {0f, 0.22f};
     private static final Spec[] SPECS = {
-            new Spec("louisewinter", true, 230, 440, -1, 1.1f, 1.1f, 0.95f, 1f, WHITE_RIM, WHITE_FILL, true, TOP_SHADE, TOP_SHADE_AT),
-            new Spec("secedasnow", true, 150, 400, -1, 1.1f, 1.1f, 0.95f, 1f, WHITE_RIM, WHITE_FILL, true, TOP_SHADE, TOP_SHADE_AT),
-            new Spec("matterhorn", true, 150, 400, -1, 1.1f, 1.1f, 0.95f, 1f, WHITE_RIM, WHITE_FILL, true, TOP_SHADE, TOP_SHADE_AT),
-            new Spec("fuji", true, 140, 540, -1, 1.1f, 1.1f, 0.95f, 1f, WHITE_RIM, WHITE_FILL, true, TOP_SHADE, TOP_SHADE_AT),
-            new Spec("paine", true, 150, 400, -1, 1.45f, 0.75f, 1f, 1f, WHITE_RIM, WHITE_FILL, true, TOP_SHADE, TOP_SHADE_AT),
-            new Spec("matterhornlake", true, 160, 360, -1, 1.1f, 1.1f, 0.95f, 1f, WHITE_RIM, WHITE_FILL, true, TOP_SHADE, TOP_SHADE_AT),
-            new Spec("pangong", false, 150, 420, -1, 1.1f, 1.1f, 0.95f, 1f, WHITE_RIM, WHITE_FILL, true, TOP_SHADE, TOP_SHADE_AT),
-            new Spec("maldives", true, 140, 540, -1, 1.1f, 1.1f, 0.95f, 1f, WHITE_RIM, WHITE_FILL, true, TOP_SHADE, TOP_SHADE_AT),
-            new Spec("namib", true, 150, 440, -1, 1.1f, 1.1f, 0.95f, 1f, WHITE_RIM, WHITE_FILL, true, TOP_SHADE, TOP_SHADE_AT),
-            new Spec("annapurna", true, 140, 540, -1, 1.1f, 1.1f, 0.95f, 1f, WHITE_RIM, WHITE_FILL, true, TOP_SHADE, TOP_SHADE_AT)
+            // Night: the clock behind the peak, pink glass
+            new Spec("night", true, 150, 400, -1, 1.15f, 1.2f, 0.9f, 0.86f, 0x80FFD7E1, 0x0FFFC8D7, true, null, null),
+            // Golden hour: a little smaller, low enough for the volcano's tip to rise into the digits
+            new Spec("golden", true, 152, 390, -1, 1f, 1f, 1f, 1f, WHITE_RIM, WHITE_FILL, true, null, null),
+            // Waterline: the clock sits on the water; no cut-out
+            new Spec("water", false, 268, 420, -1, 1f, 1f, 1f, 1f, WHITE_RIM, WHITE_FILL, true,
+                    new int[]{0x6B000C18, 0x1F000C18, 0x00000000, 0x80001428}, new float[]{0f, 0.40f, 0.52f, 1f}),
+            // Fog: a big dark clock on the left, sinking into the misty hills
+            new Spec("fog", true, 172, 470, 96, 0.46f, 0.8f, 0.8f, 1f, 0x99FFFFFF, 0, false,
+                    new int[]{0x66000000, 0x00000000}, new float[]{0f, 0.24f}),   // the top buttons are white on a pale sky
+            // Rainforest dawn: warm light at the top, the clock low enough for the ridges to cross it
+            new Spec("dawn", true, 230, 400, -1, 1f, 1f, 1f, 1f, WHITE_RIM, WHITE_FILL, true,
+                    new int[]{0x6B321C0C, 0x00321C0C}, new float[]{0f, 0.55f}),
     };
 
     private final Handler ui = new Handler(Looper.getMainLooper());
