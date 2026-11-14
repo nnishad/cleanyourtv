@@ -23,19 +23,37 @@
   <a href="docs/PRESS.md"><img src="docs/card.jpg" alt="416 TV models · 106 brands · 31 languages · 572 KB launcher. Featured in TechCrunch, TechRadar, Tom's Guide, Mashable, Android Authority, XDA, FlatpanelsHD, It's FOSS, Phandroid, GIGAZINE, Xataka, WinFuture, Frandroid, Macitynet, Techaeris, TechPP and 396 more: 412 articles from 54 countries. Before: stock Google TV home with a sponsored ad. After: the Clean Your TV launcher." width="800"></a>
 </p>
 
-> **This branch is the Cursed fork:** photographic scenes with a glass clock set into their depth, a Keep watching
-> row of picture cards and one Home settings panel, for any Android TV or Google TV. Put it on your TV with one command
-> (debugging switched on first: [the guide](themes/cursed/README.md) shows how):
->
-> ```bash
-> git clone -b cursed https://github.com/nnishad/cleanyourtv && cd cleanyourtv
-> tools/install-cursed.sh        # finds your TV on the Wi-Fi, asks which one, then asks before it changes anything
-> tools/setup-cursed.sh          # the same, and also switches off what the TV maker runs (you read the list first)
-> ```
->
-> What it does, the options (weather), updating and undoing: [themes/cursed/README.md](themes/cursed/README.md). The
-> launcher is larger than upstream's (about 28 MB) and asks for two more permissions. Everything below is upstream
+> **This branch is the Cursed fork** of CleanYourTV: photographic scenes with a glass clock set into their depth, a Keep
+> watching row of picture cards and one Home settings panel, for any Android TV or Google TV. It needs a computer (the
+> launcher is built from this repository; there is no ready-made APK). The launcher is larger than upstream's (about 28 MB)
+> and asks for two more permissions. Everything below the next section is upstream
 > [CleanYourTV](https://github.com/Gathin23/cleanyourtv)'s own page.
+
+## Install the Cursed fork: pick your way
+
+Switch **USB debugging** on in the TV first (Settings > Device Preferences > About, press Build seven times, then Developer
+options), and keep the TV on. Every way ends with this launcher as Home and the theme on, about ten minutes the first time.
+The details, what each needs and how to undo it are in the [guide](themes/cursed/README.md).
+
+| | Way | You | How |
+|---|---|---|---|
+| **A** | One command, home screen only | macOS, Linux, Windows with WSL | `tools/install-cursed.sh` |
+| **B** | One command, and switch off what the TV maker runs | the same | `tools/setup-cursed.sh` |
+| **C** | An AI assistant does it | prefer to ask, not type | [the prompt](themes/cursed/WITH-AN-ASSISTANT.md) |
+| **D** | By hand, step by step | macOS or Linux | [commands](themes/cursed/README.md#d-by-hand-macos-and-linux) |
+| **E** | By hand on Windows | PowerShell, no WSL | [commands](themes/cursed/README.md#e-by-hand-on-windows-powershell) |
+| **F** | No JDK or Android SDK on the computer | any of the above | [Docker](themes/cursed/README.md#f-building-without-a-jdk-or-the-android-sdk) |
+| **G** | A second TV, or a new version | any | [run it again](themes/cursed/README.md#g-more-tvs-and-updates) |
+
+```bash
+git clone -b cursed https://github.com/nnishad/cleanyourtv && cd cleanyourtv
+tools/install-cursed.sh              # A: finds your TV on the Wi-Fi, asks which one, asks again before it changes anything
+tools/setup-cursed.sh                # B: the same, and you read a list of what to switch off before it is applied
+tools/install-cursed.sh <tv ip> --rollback   # undo: theme, launcher, and anything B switched off
+```
+
+Not for **Samsung, LG, Roku, Vizio or VIDAA** TVs (they are not Android TV), nor **Fire TV** (its launcher cannot take Home).
+Android 8 or newer. It is tested on an emulator only so far, not on a real TV.
 
 <p align="center">
   <a href="themes/cursed/README.md"><img src="themes/cursed/screenshot.jpg" width="720" alt="Home with the Cursed theme"></a>
@@ -76,6 +94,10 @@ The bloat differs by brand, so the prompt has your coding assistant discover it 
 before touching anything you might use.
 
 ## Quick start
+
+> In this fork, use the Cursed routes above. The steps below are upstream's own and clone upstream's repository
+> (`Gathin23/cleanyourtv`); the debloat half is the same, but run them from a clone of this fork (`git clone -b cursed
+> https://github.com/nnishad/cleanyourtv`) if you want its launcher.
 
 | You have | Do this |
 |---|---|
@@ -297,7 +319,7 @@ set is in [Troubleshooting](docs/TROUBLESHOOTING.md).
 |---|---|
 | **Configure** | Dock order, hidden apps, Live TV app, 4 to 7 tiles per row, reduced motion. All in [`config.xml`](launcher/app/src/main/res/values/config.xml) |
 | **Settings on the TV** | Hold OK on Settings for launcher settings. Optional `launcher_settings_button` makes a normal click open them directly; TV settings remain on the settings page and their app tile. |
-| **Themes** | Background, wallpaper and layout from a `config.json` pushed over Wi-Fi, no rebuild. Seventeen ship in [`themes/`](themes/), the built-in `default/` included |
+| **Themes** | Background, wallpaper and layout from a `config.json` pushed over Wi-Fi, no rebuild. Eighteen ship in [`themes/`](themes/), the built-in `default/` included |
 | **31 languages** | Follows the TV's language, with a fully mirrored right-to-left layout for Hebrew |
 | **App library** | Optional: browse every installed app and add or remove Home shortcuts. See [the app library guide](docs/app-library.md) |
 | **Tile menu** | On by default (`tile_menu`): hold OK on a tile for Move, Remove from Home and App info. Off, holding OK opens App info |

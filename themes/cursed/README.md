@@ -26,7 +26,7 @@ the first time.
 |---|---|---|---|
 | **A** | One command, home screen only | macOS, Linux, Windows with WSL | `tools/install-cursed.sh` |
 | **B** | One command, and switch off what the TV maker runs | the same | `tools/setup-cursed.sh` |
-| **C** | An AI assistant does it | prefer to ask, not type | [AGENT-PROMPT.md](AGENT-PROMPT.md) |
+| **C** | An AI assistant does it | prefer to ask, not type | [WITH-AN-ASSISTANT.md](WITH-AN-ASSISTANT.md) |
 | **D** | By hand, step by step | want to see each command, macOS or Linux | [below](#d-by-hand-macos-and-linux) |
 | **E** | By hand on Windows | no WSL | [below](#e-by-hand-on-windows-powershell) |
 | **F** | No JDK or Android SDK on the computer | any of the above | [Docker](#f-building-without-a-jdk-or-the-android-sdk) |
@@ -97,7 +97,7 @@ the main README's "Doing it by hand".
 
 ### C. With an AI assistant
 
-[AGENT-PROMPT.md](AGENT-PROMPT.md) is a prompt to paste into one (Claude Code, Codex, ...) with this folder open. It does the
+[WITH-AN-ASSISTANT.md](WITH-AN-ASSISTANT.md) is a prompt to paste into one (Claude Code, Codex, ...) with this folder open. It does the
 same job as route B and sets its own rollback points: a git checkpoint of the files, and the records described under Undo.
 
 ### D. By hand, macOS and Linux

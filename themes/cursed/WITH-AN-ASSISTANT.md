@@ -1,4 +1,4 @@
-# Sample prompt for an AI coding assistant
+# With an AI coding assistant: a sample prompt
 
 Use this if you would rather have an assistant (Claude Code, Codex or similar, with shell access, on a computer on the same
 Wi-Fi as the TV) do the debloating and the install. Without an assistant, `tools/setup-cursed.sh` does the same job: see
