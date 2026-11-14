@@ -3573,13 +3573,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         return SystemSettings.intent(this, standardAction);
     }
 
-    /** Hides the Inputs pill when it would have nothing to list: streaming boxes have no HDMI-in, AV or tuner. */
+    /**
+     * Hides the Inputs pill when it would have nothing to list: streaming boxes have no HDMI-in, AV or tuner. With
+     * couch_menus the list always ends with Bluetooth and Network, so there the pill is always shown.
+     */
     private void updateInputsButton() {
         if (!showInputsPill) {
             btnInputs.setVisibility(View.GONE);
             return;
         }
-        boolean any = liveTvIntent() != null || !sourcePanelService.isEmpty()
+        boolean any = couchMenus || liveTvIntent() != null || !sourcePanelService.isEmpty()
                 || (coocaaSources && !CoocaaSources.list(this).isEmpty());
         TvInputManager tim = (TvInputManager) getSystemService(TV_INPUT_SERVICE);
         if (!any && tim != null) {
