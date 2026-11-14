@@ -768,11 +768,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                     singleRow, cfg.dockBandAll);
             if (cfg.dockTight) {
                 deco.setTight(true);
-                // The top buttons end on the band's right edge; the Keep watching cards sit in the tiles' columns, and
-                // the context line ends where the last tile does.
-                deco.setEdgeListener((left, right, tileLeft, pitch, tileWidth, tileHeight) -> {
-                    if (keepWatching != null) keepWatching.alignTo(tileLeft, pitch, tileWidth, tileHeight, COLUMNS);
-                    alignContext(left, tileLeft + (COLUMNS - 1) * pitch + tileWidth + 6 * density);
+                // The cards and the top buttons share the band's edges.
+                deco.setEdgeListener((left, right) -> {
+                    if (keepWatching != null) keepWatching.alignTo(Math.round(left), Math.round(right));
+                    alignContext(left, right);
                     // The band's edges are in the grid's coordinates and the buttons' in their row's; both start at the
                     // screen's side margin, so the two compare directly.
                     topButtonsView.setTranslationX(Math.min(0f, right - topButtonsView.getRight()));
