@@ -5,7 +5,7 @@ it came with.
 
 | Scene | Source | Licence |
 |---|---|---|
-| Night, Golden hour, Waterline, Fog, Dawn | [couch-tv](https://github.com/Seagey/couch-tv), generated for that project | Free to use, as its README says |
+| Golden hour, Waterline, Fog, Dawn | [couch-tv](https://github.com/Seagey/couch-tv), generated for that project | Free to use, as its README says |
 | Arch bridge | Pexels, photo 814499 by mdx014 | [Pexels licence](https://www.pexels.com/license/) |
 | Alpine lake | Pexels, photo 24604748 by willianjusten | Pexels licence |
 | Ember ridges | Pexels, photo 35132323 by hailsajal | Pexels licence |

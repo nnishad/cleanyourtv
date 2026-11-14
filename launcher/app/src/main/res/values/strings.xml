@@ -172,7 +172,6 @@
     <string name="hs_sec_about">About</string>
     <string name="hs_scene_time">Follows the time</string>
     <string name="hs_scene_random">Different each start</string>
-    <string name="hs_scene_night">Night</string>
     <string name="hs_scene_golden">Golden hour</string>
     <string name="hs_scene_water">Waterline</string>
     <string name="hs_scene_fog">Fog</string>

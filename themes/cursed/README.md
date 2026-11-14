@@ -5,7 +5,7 @@
 A photograph fills Home and the clock is part of it: large glass digits stand behind the nearer scenery, so peaks,
 ridges and city towers cross their lower edge, and every time still reads.
 
-- **Twelve scenes** that follow the time of day: morning, daytime, evening, night, and fog when the weather
+- **Eleven scenes** that follow the time of day: morning, daytime, evening, night, and fog when the weather
   reports it. Or a different one each start, or one you pin.
 - **Backgrounds you choose:** Home settings, Look and scenes, Backgrounds lists every scene with its picture;
   switch off the ones you do not want.
