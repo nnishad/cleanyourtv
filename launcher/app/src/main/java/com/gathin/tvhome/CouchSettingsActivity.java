@@ -29,9 +29,9 @@ public final class CouchSettingsActivity extends Activity {
     private static final int[] SECTIONS = {R.string.hs_sec_look, R.string.hs_sec_rows, R.string.hs_sec_weather, R.string.hs_sec_apps, R.string.hs_sec_about};
     private static final int[] SECTION_ICONS = {R.drawable.ic_settings_look, R.drawable.ic_settings_rows,
             R.drawable.ic_settings_weather, R.drawable.ic_settings_apps, R.drawable.ic_settings_about};
-    private static final String[] SCENE_IDS = {"", "random", "night", "golden", "water", "fog", "dawn", "valley", "bridge",
+    private static final String[] SCENE_IDS = {"", "random", "golden", "water", "fog", "dawn", "valley", "bridge",
             "alpine", "ember", "highland", "lake", "snow", "city"};
-    private static final int[] SCENE_NAMES = {R.string.hs_scene_time, R.string.hs_scene_random, R.string.hs_scene_night, R.string.hs_scene_golden, R.string.hs_scene_water, R.string.hs_scene_fog, R.string.hs_scene_dawn,
+    private static final int[] SCENE_NAMES = {R.string.hs_scene_time, R.string.hs_scene_random, R.string.hs_scene_golden, R.string.hs_scene_water, R.string.hs_scene_fog, R.string.hs_scene_dawn,
             R.string.hs_scene_valley, R.string.hs_scene_bridge, R.string.hs_scene_alpine, R.string.hs_scene_ember,
             R.string.hs_scene_highland, R.string.hs_scene_lake, R.string.hs_scene_snow, R.string.hs_scene_city};
     private static final String[] CLOCK_IDS = {"system", "12", "24"};

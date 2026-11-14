@@ -173,11 +173,11 @@ Everything below was built and checked with screenshots on the `TCL_TV_1080` emu
 
 ### 7.2 The scenes
 
-`SceneView.SPECS` holds all 13. `top` and `size` are in px at 1920 wide.
+`SceneView.SPECS` holds all 12. Night (couch-tv's original) was removed on 2026-11-14 at the user's request; from 19 to 5
+Home now shows City at dusk or Ember ridges, the two darkest scenes. `top` and `size` are in px at 1920 wide.
 
 | Id | Name in settings | Part of day | top / size | Cut-out | Photo |
 |---|---|---|---|---|---|
-| `night` | Night | Night, 19 to 5 | 150 / 400 | yes | couch-tv original |
 | `golden` | Golden hour | Evening, 16 to 19 | 152 / 390 | yes | couch-tv original |
 | `water` | Waterline | Daytime, 9 to 16 | 200 / 420 | no | couch-tv original |
 | `fog` | Fog | Fog and mist | 172 / 470, left 68 | yes | couch-tv original |

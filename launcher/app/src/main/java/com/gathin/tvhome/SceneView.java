@@ -79,8 +79,6 @@ final class SceneView extends View {
     /** A dark band at the top so the white top buttons and the date read on a pale sky. */
     private static final int[] BRIGHT_SKY = {0x59000000, 0x00000000};
     private static final Spec[] SPECS = {
-            // Night: the clock behind the peak, pink glass
-            new Spec("night", true, 150, 400, -1, 1.15f, 1.2f, 0.9f, 0.86f, 0x80FFD7E1, 0x0FFFC8D7, true, null, null),
             // Golden hour: a little smaller, low enough for the volcano's tip to rise into the digits
             new Spec("golden", true, 152, 390, -1, 1f, 1f, 1f, 1f, WHITE_RIM, WHITE_FILL, true, null, null),
             // Waterline: the clock sits on the water, clear of the Keep watching row; no cut-out
@@ -122,7 +120,7 @@ final class SceneView extends View {
             {"dawn", "ember"},                                                  // 5 to 9
             {"water", "alpine", "lake", "highland", "snow", "bridge"},          // 9 to 16
             {"golden", "city"},                                                 // 16 to 19
-            {"night"},                                                          // 19 to 5
+            {"city", "ember"},                                                  // 19 to 5: the two darkest
             {"fog", "valley"},                                                  // fog or mist reported
     };
 
