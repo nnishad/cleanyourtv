@@ -158,6 +158,10 @@ final class SceneView extends View {
     private static final float BOX_DIGITS = 0.87f, BOX_BASELINE = 0.9175f;
     /** The clock face's digit height per unit of text size. */
     private final float digitEm;
+    /** Where drawClock put the digits, for drawCutout. */
+    private float clockLeft, clockRight, clockTop, clockH;
+    private float fadeFrom = -1, fadeTo = -1;
+    private final Paint fadePaint = new Paint();
     private final Matrix glassMatrix = new Matrix();
     private Bitmap photo, glass, cutout;
     private BitmapShader glassShader;
@@ -196,6 +200,7 @@ final class SceneView extends View {
         fill.getTextBounds("0123456789", 0, 10, digits);
         digitEm = digits.height() / 1000f;
         rim.setStyle(Paint.Style.STROKE);
+        fadePaint.setXfermode(new android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.DST_OUT));
         applySpec();
         caption.setTypeface(captionFace);
         caption.setColor(0xEBFFFFFF);
@@ -409,7 +414,9 @@ final class SceneView extends View {
         float s = w / 1920f;
         dst.set(0, 0, w, h);
         c.drawBitmap(photo, null, dst, photoPaint);
-        if (spec.shade != null) {
+        drawClock(c, w, h, s);
+        if (cutout != null) drawCutout(c, s);
+        if (spec.shade != null) {   // over the clock and the cut-out alike, so the cut-out has no edge in it
             if (shadeFor != h) {
                 shadePaint.setShader(new LinearGradient(0, 0, 0, h, spec.shade, spec.shadeAt, Shader.TileMode.CLAMP));
                 shadeFor = h;
@@ -417,14 +424,32 @@ final class SceneView extends View {
             c.drawRect(0, 0, w, h, shadePaint);
         }
         drawCaption(c, s);
-        drawClock(c, w, h, s);
-        if (cutout != null) c.drawBitmap(cutout, null, dst, fgPaint);
         if (scrimFor != h) {   // a little dark at the bottom so the dock stays readable
             scrimPaint.setShader(new LinearGradient(0, 0, 0, h, new int[]{0x00000000, 0x00000000, 0x80000000},
                     new float[]{0f, 0.6f, 1f}, Shader.TileMode.CLAMP));
             scrimFor = h;
         }
         c.drawRect(0, 0, w, h, scrimPaint);
+    }
+
+    /**
+     * The scenery in front of the digits, but only over their lower part: over the digits it fades out from 90% of
+     * their height up to 62%, so the top of every digit always shows and any time reads, whichever peak or tower
+     * stands behind it. Beside the digits the cut-out is the photo's own pixels, so cutting it away there shows
+     * nothing.
+     */
+    private void drawCutout(Canvas c, float s) {
+        int layer = c.saveLayer(0, 0, getWidth(), getHeight(), null);
+        c.drawBitmap(cutout, null, dst, fgPaint);
+        float from = clockTop + 0.62f * clockH, to = clockTop + 0.9f * clockH;
+        if (fadeFrom != from || fadeTo != to) {
+            fadePaint.setShader(new LinearGradient(0, from, 0, to, 0xFF000000, 0x00000000, Shader.TileMode.CLAMP));
+            fadeFrom = from;
+            fadeTo = to;
+        }
+        float pad = 8 * s;
+        c.drawRect(clockLeft - pad, 0, clockRight + pad, to, fadePaint);
+        c.restoreToCount(layer);
     }
 
     private void drawCaption(Canvas c, float s) {
@@ -461,6 +486,10 @@ final class SceneView extends View {
             x = spec.left * s - digits.left;
         }
         float base = (spec.top + BOX_BASELINE * spec.size) * s;
+        clockLeft = x;
+        clockRight = x + tw;
+        clockTop = base - digitH;
+        clockH = digitH;
         c.drawText(time, x, base, fill);
         if (spec.rimFill != 0) c.drawText(time, x, base, rimFill);
         c.drawText(time, x, base, rim);
