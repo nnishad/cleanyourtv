@@ -2,7 +2,7 @@
 
 What is on the TCL Smart TV Pro (Android 11) at this point:
 
-- **App:** `com.gathin.tvhome` built from git tag `couch-port-v5` (APK md5 `c5466406ed7b6f6283b184d5d531bf28`, 8778959 bytes; the
+- **App:** `com.gathin.tvhome` built from git tag `couch-port-v6` (APK md5 `f6b5fffa5654dd20234d097081ee3f37`, 9925439 bytes; the
   APK is not in the repo, the tag rebuilds it).
 - **Theme:** `config.json` here (also `themes-local/couch-scenes/`), turning on:
   - `scenes`: ten bright destination photos with the glass clock (SceneView), a different one each start; credits in launcher/app/src/main/assets/scenes/CREDITS.txt
@@ -17,7 +17,7 @@ What is on the TCL Smart TV Pro (Android 11) at this point:
 ## Restore
 
 ```sh
-git checkout couch-port-v5
+git checkout couch-port-v6
 cd launcher
 TV_HOST=<tv ip> STOCK_LAUNCHER=none HOME_KEY_SERVICE=1 ./build-and-install.sh
 cd ..

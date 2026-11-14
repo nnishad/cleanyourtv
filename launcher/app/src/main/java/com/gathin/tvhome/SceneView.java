@@ -67,20 +67,21 @@ final class SceneView extends View {
 
     private static final int WHITE_RIM = 0x8CFFFFFF, WHITE_FILL = 0x1AFFFFFF;
     /** Ten bright destinations (assets/scenes/CREDITS.txt): photo, clock place and size at 1920 px, and whether the
-     *  scenery cut-out is drawn over the digits. A light top band keeps the date readable over a bright sky. */
+     *  scenery cut-out is drawn over the digits. Placed for depth, as on a phone's lock screen: the scenery rises in
+     *  front of the lower third of the digits and never touches their top 60 %. A light top band keeps the date readable over a bright sky. */
     private static final int[] TOP_SHADE = {0x40000000, 0x00000000};
     private static final float[] TOP_SHADE_AT = {0f, 0.22f};
     private static final Spec[] SPECS = {
-            new Spec("louisewinter", true, 170, 420, -1, 1.1f, 1.1f, 0.95f, 1f, WHITE_RIM, WHITE_FILL, true, TOP_SHADE, TOP_SHADE_AT),
-            new Spec("secedasnow", true, 140, 360, -1, 1.1f, 1.1f, 0.95f, 1f, WHITE_RIM, WHITE_FILL, true, TOP_SHADE, TOP_SHADE_AT),
-            new Spec("matterhorn", true, 150, 390, -1, 1.1f, 1.1f, 0.95f, 1f, WHITE_RIM, WHITE_FILL, true, TOP_SHADE, TOP_SHADE_AT),
-            new Spec("fuji", true, 150, 450, -1, 1.1f, 1.1f, 0.95f, 1f, WHITE_RIM, WHITE_FILL, true, TOP_SHADE, TOP_SHADE_AT),
-            new Spec("paine", true, 150, 450, -1, 1.1f, 1.1f, 0.95f, 1f, WHITE_RIM, WHITE_FILL, true, TOP_SHADE, TOP_SHADE_AT),
-            new Spec("matterhornlake", true, 150, 360, -1, 1.1f, 1.1f, 0.95f, 1f, WHITE_RIM, WHITE_FILL, true, TOP_SHADE, TOP_SHADE_AT),
+            new Spec("louisewinter", true, 230, 440, -1, 1.1f, 1.1f, 0.95f, 1f, WHITE_RIM, WHITE_FILL, true, TOP_SHADE, TOP_SHADE_AT),
+            new Spec("secedasnow", true, 150, 400, -1, 1.1f, 1.1f, 0.95f, 1f, WHITE_RIM, WHITE_FILL, true, TOP_SHADE, TOP_SHADE_AT),
+            new Spec("matterhorn", true, 150, 400, -1, 1.1f, 1.1f, 0.95f, 1f, WHITE_RIM, WHITE_FILL, true, TOP_SHADE, TOP_SHADE_AT),
+            new Spec("fuji", true, 140, 540, -1, 1.1f, 1.1f, 0.95f, 1f, WHITE_RIM, WHITE_FILL, true, TOP_SHADE, TOP_SHADE_AT),
+            new Spec("paine", true, 150, 400, -1, 1.45f, 0.75f, 1f, 1f, WHITE_RIM, WHITE_FILL, true, TOP_SHADE, TOP_SHADE_AT),
+            new Spec("matterhornlake", true, 160, 360, -1, 1.1f, 1.1f, 0.95f, 1f, WHITE_RIM, WHITE_FILL, true, TOP_SHADE, TOP_SHADE_AT),
             new Spec("pangong", false, 150, 420, -1, 1.1f, 1.1f, 0.95f, 1f, WHITE_RIM, WHITE_FILL, true, TOP_SHADE, TOP_SHADE_AT),
-            new Spec("maldives", true, 170, 420, -1, 1.1f, 1.1f, 0.95f, 1f, WHITE_RIM, WHITE_FILL, true, TOP_SHADE, TOP_SHADE_AT),
-            new Spec("namib", true, 160, 360, -1, 1.1f, 1.1f, 0.95f, 1f, WHITE_RIM, WHITE_FILL, true, TOP_SHADE, TOP_SHADE_AT),
-            new Spec("annapurna", true, 150, 420, -1, 1.1f, 1.1f, 0.95f, 1f, WHITE_RIM, WHITE_FILL, true, TOP_SHADE, TOP_SHADE_AT)
+            new Spec("maldives", true, 140, 540, -1, 1.1f, 1.1f, 0.95f, 1f, WHITE_RIM, WHITE_FILL, true, TOP_SHADE, TOP_SHADE_AT),
+            new Spec("namib", true, 150, 440, -1, 1.1f, 1.1f, 0.95f, 1f, WHITE_RIM, WHITE_FILL, true, TOP_SHADE, TOP_SHADE_AT),
+            new Spec("annapurna", true, 140, 540, -1, 1.1f, 1.1f, 0.95f, 1f, WHITE_RIM, WHITE_FILL, true, TOP_SHADE, TOP_SHADE_AT)
     };
 
     private final Handler ui = new Handler(Looper.getMainLooper());
