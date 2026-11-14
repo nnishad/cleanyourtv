@@ -23,10 +23,18 @@
   <a href="docs/PRESS.md"><img src="docs/card.jpg" alt="416 TV models · 106 brands · 31 languages · 572 KB launcher. Featured in TechCrunch, TechRadar, Tom's Guide, Mashable, Android Authority, XDA, FlatpanelsHD, It's FOSS, Phandroid, GIGAZINE, Xataka, WinFuture, Frandroid, Macitynet, Techaeris, TechPP and 396 more: 412 articles from 54 countries. Before: stock Google TV home with a sponsored ad. After: the Clean Your TV launcher." width="800"></a>
 </p>
 
-> **This branch is a fork with the Cursed theme:** photographic scenes with a glass clock set into their depth, a
-> Keep watching row and a Home settings panel. It needs this branch's launcher, which is larger than upstream's and
-> asks for two more permissions. What it is and how to install it: [themes/cursed/README.md](themes/cursed/README.md).
-> Everything below is upstream [CleanYourTV](https://github.com/Gathin23/cleanyourtv)'s own page.
+> **This branch is the Cursed fork:** photographic scenes with a glass clock set into their depth, a Keep watching
+> row of picture cards and one Home settings panel, for any Android TV or Google TV. Put it on your TV with one command
+> (debugging switched on first: [the guide](themes/cursed/README.md) shows how):
+>
+> ```bash
+> git clone -b cursed https://github.com/nnishad/cleanyourtv && cd cleanyourtv
+> tools/install-cursed.sh 192.168.1.50        # your TV's address
+> ```
+>
+> What it does, the options (weather), updating and undoing: [themes/cursed/README.md](themes/cursed/README.md). The
+> launcher is larger than upstream's (about 28 MB) and asks for two more permissions. Everything below is upstream
+> [CleanYourTV](https://github.com/Gathin23/cleanyourtv)'s own page.
 
 <p align="center">
   <a href="themes/cursed/README.md"><img src="themes/cursed/screenshot.jpg" width="720" alt="Home with the Cursed theme"></a>
@@ -207,6 +215,7 @@ tools/theme.sh themes/aurora                                 # push a theme; --r
 | [`tools/adb-closed.py`](tools/adb-closed.py) | Checks that the TV's network ADB port is closed once debugging is off: exits 0 when the TV refuses the connection, 1 while it is still open, 2 when nothing answered or the check itself could not run. No `nc` needed. |
 | [`tools/philips-api.py`](tools/philips-api.py) | Philips only: checks that the JointSpace control API Home Assistant uses still answers, before and after a debloat (`tools/venv/bin/python -I tools/philips-api.py <tv ip>`). Port 1926 over HTTPS first, then 1925; reads only what answers without pairing. |
 | [`tools/privacy.py`](tools/privacy.py) | Audits the TV for voice, ACR and telemetry candidates and prints the evidence for each; `--write` turns the findings into a list `disable.sh` and `restore.sh` already understand. |
+| [`tools/install-cursed.sh`](tools/install-cursed.sh) | The Cursed fork in one command: the tools, the launcher built (natively or in Docker) and made Home, the Watch Next permission and the `cursed` theme. `--weather "Place,lat,lon"` turns the weather line on. [Guide](themes/cursed/README.md). |
 | [`tools/theme.sh`](tools/theme.sh), [`theme_restart.py`](tools/theme_restart.py) | Push a folder from [`themes/`](themes/) to the launcher and restart Home. |
 | [`tools/manage.py`](tools/manage.py) | List every add-on, theme and switch with its screenshot, see what is on the TV, and install, update or remove one by running its creator's own script. |
 | [`tools/bench.py`](tools/bench.py) | Measures the launcher that answers HOME: key latency, how far the focus moved, janky frames, cold start, return to Home, and the idle CPU and PSS it costs. Changes nothing on the TV and writes the raw per-key numbers to JSON; no extra install. |
