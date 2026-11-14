@@ -187,9 +187,6 @@
     <string name="gear_tv_note">Wi-Fi والصورة والصوت وبقية إعدادات التلفاز</string>
     <string name="inputs_bluetooth">Bluetooth</string>
     <string name="inputs_network">الشبكة</string>
-    <string name="tip_move">نصيحة: اضغط مطولًا على موافق فوق تطبيق لنقله أو إزالته من الرئيسية</string>
-    <string name="tip_up">نصيحة: اضغط الأعلى من التطبيقات للوصول إلى متابعة المشاهدة</string>
-    <string name="tip_gear">نصيحة: الترس يفتح إعدادات الرئيسية وإعدادات التلفاز</string>
     <string name="kw_min_left">باقي %1$d د</string>
     <string name="wx_sunny">مشمس</string>
     <string name="wx_clear">صافٍ</string>

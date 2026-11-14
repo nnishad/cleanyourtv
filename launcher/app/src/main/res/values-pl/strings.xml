@@ -185,9 +185,6 @@
     <string name="gear_tv_note">Wi-Fi, obraz, dźwięk i reszta telewizora</string>
     <string name="inputs_bluetooth">Bluetooth</string>
     <string name="inputs_network">Sieć</string>
-    <string name="tip_move">Wskazówka: przytrzymaj OK na aplikacji, aby ją przenieść lub usunąć z ekranu głównego</string>
-    <string name="tip_up">Wskazówka: naciśnij W górę z aplikacji, aby przejść do Oglądaj dalej</string>
-    <string name="tip_gear">Wskazówka: koło zębate otwiera ustawienia ekranu głównego i ustawienia TV</string>
     <string name="kw_min_left">Zostało %1$d min</string>
     <string name="wx_sunny">Słonecznie</string>
     <string name="wx_clear">Bezchmurnie</string>

@@ -183,9 +183,6 @@
     <string name="gear_tv_note">Wi-Fi, görüntü, ses ve TV\'nin diğer ayarları</string>
     <string name="inputs_bluetooth">Bluetooth</string>
     <string name="inputs_network">Ağ</string>
-    <string name="tip_move">İpucu: bir uygulamayı taşımak veya ana ekrandan kaldırmak için üzerinde Tamam\'ı basılı tutun</string>
-    <string name="tip_up">İpucu: İzlemeye devam et için uygulamalardayken Yukarı\'ya basın</string>
-    <string name="tip_gear">İpucu: dişli, ana ekran ayarlarını ve TV ayarlarını açar</string>
     <string name="kw_min_left">%1$d dk kaldı</string>
     <string name="wx_sunny">Güneşli</string>
     <string name="wx_clear">Açık</string>

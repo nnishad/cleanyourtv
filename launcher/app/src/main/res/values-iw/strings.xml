@@ -232,9 +232,6 @@
     <string name="gear_tv_note">Wi-Fi, תמונה, צליל ושאר הגדרות הטלוויזיה</string>
     <string name="inputs_bluetooth">Bluetooth</string>
     <string name="inputs_network">רשת</string>
-    <string name="tip_move">טיפ: לחיצה ממושכת על אישור באפליקציה מאפשרת להעביר אותה או להסיר אותה ממסך הבית</string>
-    <string name="tip_up">טיפ: לחיצה על למעלה מהאפליקציות מובילה להמשך צפייה</string>
-    <string name="tip_gear">טיפ: גלגל השיניים פותח את הגדרות מסך הבית ואת הגדרות הטלוויזיה</string>
     <string name="kw_min_left">נותרו %1$d דק׳</string>
     <string name="wx_sunny">שמשי</string>
     <string name="wx_clear">בהיר</string>

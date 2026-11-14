@@ -194,9 +194,6 @@
     <string name="gear_tv_note">Wi-Fi, tasvir, ovoz va TVning boshqa sozlamalari</string>
     <string name="inputs_bluetooth">Bluetooth</string>
     <string name="inputs_network">Tarmoq</string>
-    <string name="tip_move">Maslahat: ilovani koʻchirish yoki Bosh ekrandan olib tashlash uchun ustida OK ni bosib turing</string>
-    <string name="tip_up">Maslahat: Tomoshani davom ettirish uchun ilovalardan Yuqoriga bosing</string>
-    <string name="tip_gear">Maslahat: tishli gʻildirak Bosh ekran va TV sozlamalarini ochadi</string>
     <string name="kw_min_left">%1$d daq qoldi</string>
     <string name="wx_sunny">Quyoshli</string>
     <string name="wx_clear">Ochiq</string>

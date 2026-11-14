@@ -183,9 +183,6 @@
     <string name="gear_tv_note">Wi-Fi、畫面、聲音及電視的其他設定</string>
     <string name="inputs_bluetooth">Bluetooth</string>
     <string name="inputs_network">網路</string>
-    <string name="tip_move">提示：在應用程式上長按確定可移動或從主畫面移除</string>
-    <string name="tip_up">提示：在應用程式區按上鍵可前往「繼續觀看」</string>
-    <string name="tip_gear">提示：齒輪圖示可開啟主畫面設定和電視設定</string>
     <string name="kw_min_left">剩餘 %1$d 分鐘</string>
     <string name="wx_sunny">晴</string>
     <string name="wx_clear">晴</string>

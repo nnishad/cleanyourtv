@@ -235,9 +235,6 @@
     <string name="gear_tv_note">Wi-Fi, изображение, звук и остальное</string>
     <string name="inputs_bluetooth">Bluetooth</string>
     <string name="inputs_network">Сеть</string>
-    <string name="tip_move">Совет: удерживайте ОК на приложении, чтобы переместить его или убрать с главного экрана</string>
-    <string name="tip_up">Совет: нажмите Вверх от приложений, чтобы открыть «Продолжить просмотр»</string>
-    <string name="tip_gear">Совет: шестерёнка открывает настройки главного экрана и ТВ</string>
     <string name="kw_min_left">Осталось %1$d мин</string>
     <string name="wx_sunny">Солнечно</string>
     <string name="wx_clear">Ясно</string>

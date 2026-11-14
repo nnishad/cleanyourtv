@@ -192,9 +192,6 @@
     <string name="gear_tv_note">Wi-Fi, obraz, zvuk a ostatní nastavení TV</string>
     <string name="inputs_bluetooth">Bluetooth</string>
     <string name="inputs_network">Síť</string>
-    <string name="tip_move">Tip: podržením OK na aplikaci ji přesunete nebo odeberete z domovské obrazovky</string>
-    <string name="tip_up">Tip: z aplikací se tlačítkem Nahoru dostanete na Pokračovat ve sledování</string>
-    <string name="tip_gear">Tip: ozubené kolo otevírá nastavení domovské obrazovky a nastavení TV</string>
     <string name="kw_min_left">Zbývá %1$d min</string>
     <string name="wx_sunny">Slunečno</string>
     <string name="wx_clear">Jasno</string>

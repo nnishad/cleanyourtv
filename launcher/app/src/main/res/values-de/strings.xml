@@ -160,9 +160,6 @@
     <string name="gear_tv_note">Wi-Fi, Bild, Ton und alles andere am TV</string>
     <string name="inputs_bluetooth">Bluetooth</string>
     <string name="inputs_network">Netzwerk</string>
-    <string name="tip_move">Tipp: Halte OK auf einer App, um sie zu verschieben oder von Home zu entfernen</string>
-    <string name="tip_up">Tipp: Drücke bei den Apps Oben für Weiterschauen</string>
-    <string name="tip_gear">Tipp: Das Zahnrad öffnet die Home- und die TV-Einstellungen</string>
     <string name="kw_min_left">Noch %1$d Min.</string>
     <string name="wx_sunny">Sonnig</string>
     <string name="wx_clear">Klar</string>

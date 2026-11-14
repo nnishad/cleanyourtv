@@ -185,9 +185,6 @@
     <string name="gear_tv_note">Wi-Fi, billede, lyd og resten af TV\'et</string>
     <string name="inputs_bluetooth">Bluetooth</string>
     <string name="inputs_network">Netværk</string>
-    <string name="tip_move">Tip: hold OK nede på en app for at flytte den eller fjerne den fra startskærmen</string>
-    <string name="tip_up">Tip: tryk Op fra appsene for Se videre</string>
-    <string name="tip_gear">Tip: tandhjulet åbner startskærmens indstillinger og TV-indstillinger</string>
     <string name="kw_min_left">%1$d min tilbage</string>
     <string name="wx_sunny">Solrigt</string>
     <string name="wx_clear">Klart</string>

@@ -165,9 +165,6 @@
     <string name="gear_tv_note">Wi-Fi, slika, zvuk i ostalo na TV-u</string>
     <string name="inputs_bluetooth">Bluetooth</string>
     <string name="inputs_network">Mreža</string>
-    <string name="tip_move">Savet: zadržite OK na aplikaciji da je premestite ili uklonite sa početnog ekrana</string>
-    <string name="tip_up">Savet: pritisnite Gore iz aplikacija za Nastavi gledanje</string>
-    <string name="tip_gear">Savet: zupčanik otvara podešavanja početnog ekrana i TV-a</string>
     <string name="kw_min_left">Još %1$d min</string>
     <string name="wx_sunny">Sunčano</string>
     <string name="wx_clear">Vedro</string>

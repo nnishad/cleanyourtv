@@ -206,9 +206,6 @@
     <string name="gear_tv_note">Wi-Fi, hình ảnh, âm thanh và các mục khác của TV</string>
     <string name="inputs_bluetooth">Bluetooth</string>
     <string name="inputs_network">Mạng</string>
-    <string name="tip_move">Mẹo: giữ OK trên ứng dụng để di chuyển hoặc bỏ khỏi màn hình chính</string>
-    <string name="tip_up">Mẹo: bấm Lên từ hàng ứng dụng để tới Xem tiếp</string>
-    <string name="tip_gear">Mẹo: bánh răng mở Cài đặt màn hình chính và Cài đặt TV</string>
     <string name="kw_min_left">Còn %1$d phút</string>
     <string name="wx_sunny">Nắng</string>
     <string name="wx_clear">Trời quang</string>

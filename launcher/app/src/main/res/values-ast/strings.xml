@@ -202,9 +202,6 @@
     <string name="gear_tv_note">Wi-Fi, imaxe, soníu y el restu del televisor</string>
     <string name="inputs_bluetooth">Bluetooth</string>
     <string name="inputs_network">Rede</string>
-    <string name="tip_move">Conseyu: caltén calcáu OK nuna aplicación pa movela o quitala d\'Aniciu</string>
-    <string name="tip_up">Conseyu: calca Arriba dende les aplicaciones pa Siguir viendo</string>
-    <string name="tip_gear">Conseyu: l\'engranaxe abre los axustes d\'Aniciu y del televisor</string>
     <string name="kw_min_left">Queden %1$d min</string>
     <string name="wx_sunny">Soleyero</string>
     <string name="wx_clear">Estenao</string>

@@ -192,9 +192,6 @@
     <string name="gear_tv_note">Wi-Fi, imatge, so i la resta del televisor</string>
     <string name="inputs_bluetooth">Bluetooth</string>
     <string name="inputs_network">Xarxa</string>
-    <string name="tip_move">Consell: mantén premut D\'acord en una aplicació per moure-la o treure-la de l\'inici</string>
-    <string name="tip_up">Consell: prem Amunt des de les aplicacions per a Continua mirant</string>
-    <string name="tip_gear">Consell: l\'engranatge obre la configuració de l\'inici i la del televisor</string>
     <string name="kw_min_left">Queden %1$d min</string>
     <string name="wx_sunny">Assolellat</string>
     <string name="wx_clear">Serè</string>

@@ -157,9 +157,6 @@
     <string name="gear_tv_note">Wi-Fi ภาพ เสียง และส่วนอื่น ๆ ของทีวี</string>
     <string name="inputs_bluetooth">Bluetooth</string>
     <string name="inputs_network">เครือข่าย</string>
-    <string name="tip_move">เคล็ดลับ: กด OK ค้างที่แอปเพื่อย้ายหรือนำออกจากหน้าหลัก</string>
-    <string name="tip_up">เคล็ดลับ: กดขึ้นจากแถวแอปเพื่อไปที่ดูต่อ</string>
-    <string name="tip_gear">เคล็ดลับ: ไอคอนเฟืองเปิดการตั้งค่าหน้าหลักและการตั้งค่าทีวี</string>
     <string name="kw_min_left">เหลือ %1$d นาที</string>
     <string name="wx_sunny">แดดจัด</string>
     <string name="wx_clear">ท้องฟ้าแจ่มใส</string>

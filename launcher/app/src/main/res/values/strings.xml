@@ -253,9 +253,6 @@
     <string name="gear_tv_note">Wi-Fi, picture, sound and the rest of the TV</string>
     <string name="inputs_bluetooth">Bluetooth</string>
     <string name="inputs_network">Network</string>
-    <string name="tip_move">Tip: hold OK on an app to move it or take it off Home</string>
-    <string name="tip_up">Tip: press Up from the apps for Keep watching</string>
-    <string name="tip_gear">Tip: the gear opens Home settings and TV settings</string>
     <string name="kw_min_left">%1$d min left</string>
     <!-- The weather beside the date (Weather.describe). -->
     <string name="wx_sunny">Sunny</string>

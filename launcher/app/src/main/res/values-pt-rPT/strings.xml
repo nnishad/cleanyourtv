@@ -114,9 +114,6 @@
     <string name="gear_tv_note">Wi-Fi, imagem, som e o resto da TV</string>
     <string name="inputs_bluetooth">Bluetooth</string>
     <string name="inputs_network">Rede</string>
-    <string name="tip_move">Dica: mantenha OK premido numa app para a mover ou tirar do ecrã inicial</string>
-    <string name="tip_up">Dica: prima Para cima nas apps para ver Continuar a ver</string>
-    <string name="tip_gear">Dica: a roda dentada abre as configurações do ecrã inicial e da TV</string>
     <string name="kw_min_left">Faltam %1$d min</string>
     <string name="wx_sunny">Sol</string>
     <string name="wx_clear">Céu limpo</string>
