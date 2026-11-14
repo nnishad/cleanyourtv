@@ -5,7 +5,7 @@
   "weather_auto": true,
   "couch_menus": true,
   "hide_rows_idle_seconds": 60,
-  "home_idle_clock_minutes": 15,
+  "home_idle_clock_minutes": 0,
   "dock_apps": [
     "com.netflix.ninja",
     "com.google.android.youtube.tv",

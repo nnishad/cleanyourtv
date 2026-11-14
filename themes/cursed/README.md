@@ -181,6 +181,10 @@ covers this computer's own network (the /24 around its address); for a bigger or
 `--subnet 192.168.1.0/24`. `--yes` skips the final question, for a script or an assistant that has already asked you.
 Run without a keyboard (no terminal to answer on) and without `--yes`, it refuses to change anything.
 
+**Screen saver.** This theme leaves it to the TV: the launcher's own idle clock is off, so the TV's screen saver (Settings >
+Device Preferences > Screen saver) is the one that runs. To use the launcher's clock instead, turn on **Home settings >
+Home rows > Ambient clock when idle**, or pick the launcher's clock as the TV's screen saver.
+
 **Weather** beside the date ("☁ 4° Overcast"). With nothing set up it uses **where the TV says it is**: Android works a
 position out from the Wi-Fi networks around the TV when the TV's **Location** setting is on (Settings > Device
 Preferences > Location). The installer has already given the launcher the permission; if it is missing, **Home settings >
