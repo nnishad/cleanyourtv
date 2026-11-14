@@ -29,7 +29,7 @@
             android:fontFamily="@string/font_medium"
             android:singleLine="true"
             android:textColor="@color/settings_text"
-            android:textSize="17sp" />
+            android:textSize="@dimen/type_label" />
 
         <TextView
             android:id="@+id/rowNote"
@@ -39,7 +39,7 @@
             android:duplicateParentState="true"
             android:fontFamily="@string/font_body"
             android:textColor="@color/settings_text_dim"
-            android:textSize="12sp"
+            android:textSize="@dimen/type_caption"
             android:visibility="gone" />
     </LinearLayout>
 
@@ -52,5 +52,5 @@
         android:fontFamily="@string/font_body"
         android:singleLine="true"
         android:textColor="@color/settings_text_dim"
-        android:textSize="16sp" />
+        android:textSize="@dimen/type_label" />
 </LinearLayout>

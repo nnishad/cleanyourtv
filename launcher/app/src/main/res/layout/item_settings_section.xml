@@ -29,5 +29,5 @@
         android:fontFamily="@string/font_medium"
         android:singleLine="true"
         android:textColor="@color/settings_text"
-        android:textSize="17sp" />
+        android:textSize="@dimen/type_label" />
 </LinearLayout>

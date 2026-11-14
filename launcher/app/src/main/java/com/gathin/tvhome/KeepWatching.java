@@ -121,7 +121,7 @@ final class KeepWatching {
                 shadedFor = w;
             }
             float top = parent.getPaddingTop(), bottom = h - parent.getPaddingBottom();   // the cards, not their padding
-            if (parent.canScrollHorizontally(-1)) c.drawRect(0, top, length, bottom, left);
+            if (parent.canScrollHorizontally(-1)) c.drawRect(0, top, length, bottom, left);   // see KeepWatching.focusFirst for the end nudge
             if (parent.canScrollHorizontally(1)) c.drawRect(w - length, top, w, bottom, right);
         }
     }
@@ -139,8 +139,23 @@ final class KeepWatching {
         thumbs.evictAll();
     }
 
+    /** The cards on screen now, for the inactivity dim. */
+    List<View> cards() {
+        List<View> out = new ArrayList<>();
+        for (int i = 0; i < list.getChildCount(); i++) out.add(list.getChildAt(i));
+        return out;
+    }
+
     boolean shown() {
         return block.getVisibility() == View.VISIBLE;
+    }
+
+    /** The row's last card, or its first, saying there is nowhere further to go. */
+    void nudgeAtEnds(View card, int keyCode) {
+        int pos = list.getChildAdapterPosition(card);
+        boolean first = pos == 0 && keyCode == android.view.KeyEvent.KEYCODE_DPAD_LEFT;
+        boolean last = pos == items.size() - 1 && keyCode == android.view.KeyEvent.KEYCODE_DPAD_RIGHT;
+        if (first || last) Focus.nudge(card, keyCode, false);
     }
 
     /** Down from the top buttons: the first card takes focus; false when there is no row to land on. */
@@ -424,6 +439,10 @@ final class KeepWatching {
                 v.setOnFocusChangeListener((view, has) -> {
                     if (has) listener.onCardFocused();
                 });
+                Focus.attach(v, true, false, (view, code, event) -> {
+                    if (event.getAction() == android.view.KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) nudgeAtEnds(view, code);
+                    return false;
+                });   // zoom, press dip, the end nudge; the glass turns bright through watch_card_bg
             }
         }
     }

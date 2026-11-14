@@ -215,6 +215,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private int swallowKey;
     private View rowsWrap, topButtonsView;
     private final Runnable hideRows = this::hideRowsNow;
+    /** The tvOS inactivity cue (design/REVAMP-PLAN.md, 3.2): after a while without a key, all but the focused control dim. */
+    private static final long IDLE_DIM_MS = 20_000L;
+    private static final float IDLE_DIM_ALPHA = 0.6f;
+    private boolean idleDimmed;
+    private final Runnable idleDim = this::idleDimNow;
     private List<RaceWeekend.Race> raceCalendar;
     private View racePanel;
     private TextView raceKicker, raceHeadline, raceSessions;
@@ -990,22 +995,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) return v.getId() == leftButton;
             return keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && v.getId() == rightButton;
         };
-        btnInputs.setOnKeyListener(pillKeys);
-        btnWifi.setOnKeyListener(pillKeys);
-        btnVpn.setOnKeyListener(pillKeys);
-        btnSettings.setOnKeyListener(pillKeys);
-        btnReorder.setOnKeyListener(pillKeys);
-        btnLibraryTop.setOnKeyListener(pillKeys);
-        for (View button : topAppButtons) button.setOnKeyListener(pillKeys);
-        if (advancedEffects) {
-            List<View> pills = new ArrayList<>(Arrays.asList(btnInputs, btnWifi, btnVpn, btnReorder, btnLibraryTop, btnSettings));
-            pills.addAll(topAppButtons);
-            for (View button : pills) {
-                button.setOnFocusChangeListener((view, focused) -> view.animate()
-                        .scaleX(focused ? 1.04f : 1f).scaleY(focused ? 1.04f : 1f)
-                        .setDuration(reducedMotion ? Motion.REDUCED_MS : 160).start());
-            }
-        }
+        // The one focus vocabulary (Focus): zoom with advanced effects, the press dip under OK, a nudge at the row's ends.
+        List<View> pills = new ArrayList<>(Arrays.asList(btnInputs, btnWifi, btnVpn, btnReorder, btnLibraryTop, btnSettings));
+        pills.addAll(topAppButtons);
+        for (View button : pills) Focus.attach(button, advancedEffects, reducedMotion || !animations, pillKeys);
         if (festive) applyFestiveSkin((TextView) btnInputs, (TextView) btnSettings);
 
         // Hide the glass when focus leaves the tiles.
@@ -1179,6 +1172,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         restartIdleClock();
         armHideRows();
+        armIdleDim();
         if (sceneView != null) {
             sceneView.ensureLoaded();   // dropped by onTrimMemory
             sceneView.refresh();
@@ -1390,6 +1384,42 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         topButtonsView.animate().alpha(0f).setDuration(500).start();
     }
 
+    private void armIdleDim() {
+        root.removeCallbacks(idleDim);
+        if (resumed && animations) root.postDelayed(idleDim, IDLE_DIM_MS);
+    }
+
+    /** Everything focusable on Home but the focused control, to IDLE_DIM_ALPHA; the focused one stays as it is. */
+    private void idleDimNow() {
+        if (!resumed || reordering || openPopup != null || appLibrary != null || cardPrompt != null || rowsHidden) {
+            armIdleDim();
+            return;
+        }
+        idleDimmed = true;
+        for (View v : idleTargets()) {
+            if (!v.hasFocus() && v.getAlpha() > IDLE_DIM_ALPHA) {
+                v.animate().alpha(IDLE_DIM_ALPHA).setDuration(Motion.SLOW * 2).setInterpolator(Motion.MOVE).start();
+            }
+        }
+    }
+
+    private void idleUndim() {
+        idleDimmed = false;
+        for (View v : idleTargets()) {
+            float to = v.getParent() == grid ? tileAlpha(grid.getChildAdapterPosition(v)) : 1f;
+            v.animate().alpha(to).setDuration(reducedMotion ? Motion.REDUCED_MS : Motion.FAST).setInterpolator(Motion.ENTER).start();
+        }
+    }
+
+    /** The grid's tiles, the Keep watching cards and the top buttons: what the inactivity dim fades. */
+    private List<View> idleTargets() {
+        List<View> out = new ArrayList<>();
+        for (int i = 0; i < grid.getChildCount(); i++) out.add(grid.getChildAt(i));
+        if (keepWatching != null) out.addAll(keepWatching.cards());
+        for (int i = 0; i < ((ViewGroup) topButtonsView).getChildCount(); i++) out.add(((ViewGroup) topButtonsView).getChildAt(i));
+        return out;
+    }
+
     private void armHideRows() {
         root.removeCallbacks(hideRows);
         if (hideRowsMs > 0 && resumed) root.postDelayed(hideRows, hideRowsMs);
@@ -1420,6 +1450,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         cancelHoldOk();
         root.removeCallbacks(showIdleClock);
         root.removeCallbacks(hideRows);
+        root.removeCallbacks(idleDim);
+        if (idleDimmed) idleUndim();
         if (rowsHidden) {   // leaving Home: it comes back with its rows
             rowsHidden = false;
             rowsWrap.setAlpha(1f);
@@ -1548,6 +1580,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // taken after that would arm one nothing releases.
         if (resumed && event.getKeyCode() >= 1000 && RemoteKeys.handle(this, event, homeAppKeys.get(event.getKeyCode()),
                 homeHoldAppKeys.get(event.getKeyCode()))) return true;
+        if (event.getAction() == KeyEvent.ACTION_DOWN) {
+            if (idleDimmed) idleUndim();
+            armIdleDim();
+        }
         if (handleSettingsKey(event)) return true;
         if (hideRowsMs > 0 && event.getKeyCode() < 1000) {
             if (swallowKey == event.getKeyCode() && event.getAction() == KeyEvent.ACTION_UP) {
@@ -2618,8 +2654,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             }
             // In the dock, the last app is the row's end: the empty slots after it take no focus.
             int rowCount = position < COLUMNS ? Math.min(count, adapter.dockFilled()) : count;
-            return GridNavigation.atHorizontalEdge(position, rowCount, COLUMNS,
+            boolean edge = GridNavigation.atHorizontalEdge(position, rowCount, COLUMNS,
                     rtlAppGrid, keyCode == KeyEvent.KEYCODE_DPAD_LEFT);
+            if (edge) nudgeTile(position, keyCode);
+            return edge;
         }
         if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
             if (position < COLUMNS) return false;          // dock row: let focus move to the top bar
@@ -2637,6 +2675,19 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         grid.playSoundEffect(keyCode == KeyEvent.KEYCODE_DPAD_UP
                 ? SoundEffectConstants.NAVIGATION_UP : SoundEffectConstants.NAVIGATION_DOWN);
         return true;
+    }
+
+    /** The end of a row: the tile and the glass on it push a little towards the key and come back. */
+    private void nudgeTile(int position, int keyCode) {
+        if (reducedMotion || !animations) return;
+        RecyclerView.ViewHolder vh = grid.findViewHolderForAdapterPosition(position);
+        if (vh == null) return;
+        Focus.nudge(vh.itemView, keyCode, false);
+        if (!glassShown) return;
+        float d = Motion.NUDGE_DP * density * (keyCode == KeyEvent.KEYCODE_DPAD_LEFT ? -1 : 1);
+        float target = glassTargetX - glassScrollShiftX;
+        springX.animateToFinalPosition(target + d);
+        root.postDelayed(() -> springX.animateToFinalPosition(glassTargetX - glassScrollShiftX), Motion.FAST / 2);
     }
 
     @Override public void onLibraryFocused() {
@@ -3865,6 +3916,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             popup.dismiss();
             action.run();
         });
+        Focus.attach(row, false, reducedMotion || !animations);
         rows.addView(row);
         return row;
     }
@@ -3926,6 +3978,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             popup.dismiss();
             action.run();
         });
+        Focus.attach(row, false, reducedMotion || !animations);
         rows.addView(row);
     }
 

@@ -955,6 +955,18 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             card.setClipToOutline(true);
 
             card.setOnKeyListener((view, keyCode, event) -> {
+                if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER) {
+                    // The press dip (Focus): the tile sinks under OK and comes back as it opens.
+                    if (animations && !reducedMotion) {
+                        float base = view.isFocused() ? (zoomOverride > 0f ? zoomOverride : advancedEffects ? 1.12f : 1.10f) : 1f;
+                        boolean down = event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0;
+                        if (down || event.getAction() == KeyEvent.ACTION_UP) {
+                            float s = down ? base * Motion.PRESS_SCALE : base;
+                            view.animate().scaleX(s).scaleY(s).setDuration(Motion.FAST).setInterpolator(Motion.ENTER).start();
+                        }
+                    }
+                    return false;
+                }
                 if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
                 if (keyCode != KeyEvent.KEYCODE_DPAD_UP && keyCode != KeyEvent.KEYCODE_DPAD_DOWN
                         && keyCode != KeyEvent.KEYCODE_DPAD_LEFT && keyCode != KeyEvent.KEYCODE_DPAD_RIGHT) return false;

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Glass under focus (tokens.xml), the same slab as GlassView: brighter fill, a sheen across the top, a crisp rim. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/glass_base" />
+            <corners android:radius="@dimen/radius_m" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient android:angle="270" android:startColor="@color/glass_focus_top" android:endColor="@color/glass_focus_bottom" />
+            <corners android:radius="@dimen/radius_m" />
+        </shape>
+    </item>
+    <item android:height="24dp" android:gravity="top">
+        <shape android:shape="rectangle">
+            <gradient android:angle="270" android:startColor="@color/glass_focus_sheen" android:endColor="#00FFFFFF" />
+            <corners android:topLeftRadius="@dimen/radius_m" android:topRightRadius="@dimen/radius_m" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <stroke android:width="@dimen/rim_width" android:color="@color/glass_focus_rim" />
+            <corners android:radius="@dimen/radius_m" />
+        </shape>
+    </item>
+</layer-list>

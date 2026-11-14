@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Design tokens (design/REVAMP-PLAN.md, 3.1): the one source for type, radii, spacing, glass and text colours.
+     Layouts, drawables and code read these; nothing else should carry its own literal. -->
+<resources>
+    <!-- Type scale (Outfit). Nothing under 12sp: that is 24 px on a 1080p panel, the smallest that reads from a sofa. -->
+    <dimen name="type_caption">12sp</dimen>
+    <dimen name="type_body">14sp</dimen>
+    <dimen name="type_label">16sp</dimen>
+    <dimen name="type_title">20sp</dimen>
+    <dimen name="type_headline">28sp</dimen>
+
+    <!-- Radii: small for thumbnails and chips, medium for tiles, cards and rows, large for the dock, sheets and
+         popovers. Round buttons are half their height. -->
+    <dimen name="radius_s">12dp</dimen>
+    <dimen name="radius_m">20dp</dimen>
+    <dimen name="radius_l">28dp</dimen>
+
+    <!-- Spacing on a 4dp grid. -->
+    <dimen name="space_1">4dp</dimen>
+    <dimen name="space_2">8dp</dimen>
+    <dimen name="space_3">12dp</dimen>
+    <dimen name="space_4">16dp</dimen>
+    <dimen name="space_6">24dp</dimen>
+    <dimen name="space_8">32dp</dimen>
+    <dimen name="space_12">48dp</dimen>
+
+    <!-- Controls -->
+    <dimen name="control_height">48dp</dimen>
+    <dimen name="row_height">56dp</dimen>
+    <dimen name="rim_width">1.5dp</dimen>
+
+    <!-- Glass: three levels of the same white over a faint dark base, so white text reads on any photo. -->
+    <color name="glass_base">#40101418</color>
+    <color name="glass_rest_top">#26FFFFFF</color>
+    <color name="glass_rest_bottom">#12FFFFFF</color>
+    <color name="glass_rest_rim">#33FFFFFF</color>
+    <color name="glass_raised_top">#38FFFFFF</color>
+    <color name="glass_raised_bottom">#1AFFFFFF</color>
+    <color name="glass_focus_top">#5CFFFFFF</color>
+    <color name="glass_focus_bottom">#26FFFFFF</color>
+    <color name="glass_focus_sheen">#40FFFFFF</color>
+    <color name="glass_focus_rim">#E6FFFFFF</color>
+    <color name="sheet_scrim">#E60A0F14</color>
+
+    <!-- Text over photos and glass -->
+    <color name="text_primary">#FFFFFFFF</color>
+    <color name="text_secondary">#B8FFFFFF</color>
+    <color name="text_tertiary">#85FFFFFF</color>
+    <color name="text_shadow">#A6000000</color>
+
+    <!-- The default accent, until the scene gives its own (SceneView.accent). -->
+    <color name="accent">#FF8FD3FF</color>
+
+    <!-- Motion (Motion.java mirrors these for code). -->
+    <integer name="motion_fast">120</integer>
+    <integer name="motion_standard">200</integer>
+    <integer name="motion_slow">320</integer>
+</resources>
