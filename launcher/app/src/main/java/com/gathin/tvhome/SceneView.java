@@ -103,11 +103,18 @@ final class SceneView extends View {
     private boolean loading, released;
     private int shadeFor = -1, scrimFor = -1;
     private String time = "", date = "", weather = "";
+    /** Drawn while the pictures are not in memory; Home's own background is taken away under the scene. */
+    private final int background;
 
     SceneView(Context context, Config cfg) {
         super(context);
         setWillNotDraw(false);
         setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
+        // Everything here changes once a minute, but the whole window is redrawn on every frame of a focus move: the
+        // photo, the cut-out, the gradients and above all the 400 px digits, which are too big for the glyph cache and
+        // are drawn as paths each time. As a GPU layer it is drawn once per change and is one textured quad after that.
+        setLayerType(LAYER_TYPE_HARDWARE, null);
+        background = cfg.backgroundColor;
         spec = pick(context, cfg.scene);
         time = date = "";
         is24 = ClockFormat.is24(context, cfg.clockFormat);
@@ -233,7 +240,11 @@ final class SceneView extends View {
     @Override
     protected void onDraw(Canvas c) {
         int w = getWidth(), h = getHeight();
-        if (photo == null || w == 0) return;
+        if (w == 0) return;
+        if (photo == null) {
+            c.drawColor(background);
+            return;
+        }
         float s = w / 1920f;
         dst.set(0, 0, w, h);
         c.drawBitmap(photo, null, dst, photoPaint);

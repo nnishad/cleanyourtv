@@ -537,6 +537,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             sceneView = new SceneView(this, cfg);
             root.addView(sceneView, 0, new FrameLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            root.setBackground(null);   // the scene covers the screen (its own colour until the photo is in): one fill fewer a frame
             findViewById(R.id.leftBlock).setVisibility(View.INVISIBLE);
             findViewById(R.id.weather).setVisibility(View.GONE);
         }
