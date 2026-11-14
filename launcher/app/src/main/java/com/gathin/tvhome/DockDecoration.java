@@ -28,9 +28,13 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
     private final boolean evenPadding;
     /** Couch-tv port (dock_tight): the band hugs its tiles, with small gaps and corners. */
     private boolean tight;
-    /** Told where the band's left and right edges are, so the Keep watching row and the top buttons can line up with it. */
+    /**
+     * Told where the band's left and right edges are, so the top buttons can line up with it, and where its tiles
+     * are (the first one's left edge, the distance from one tile to the next, a tile's size), so the Keep watching
+     * cards can sit in the same columns at the same size.
+     */
     interface EdgeListener {
-        void onBand(float left, float right);
+        void onBand(float left, float right, float tileLeft, float pitch, int tileWidth, int tileHeight);
     }
     private EdgeListener edgeListener;
     private float edgeLeft = -1f, edgeRight = -1f;
@@ -103,7 +107,7 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
     public void onDraw(@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
         if (!bandVisible) return;
         boolean any = false;
-        int cardWidth = 0;
+        int cardWidth = 0, cardHeight = 0;
         for (int i = 0; i < parent.getChildCount(); i++) {
             View child = parent.getChildAt(i);
             int pos = parent.getChildAdapterPosition(child);
@@ -116,6 +120,7 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
             float r = l + card.getWidth();
             float b = t + card.getHeight();
             cardWidth = card.getWidth();
+            cardHeight = card.getHeight();
             if (!any) {
                 rect.set(l, t, r, b);
                 any = true;
@@ -164,16 +169,17 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
         // The edges the rows above line up with are the full dock's, worked out from the columns, so a dock with
         // fewer apps than columns (the band ends early) does not pull the cards and the top buttons in with it.
         float fullRight = rect.right;
+        float cell = dockSize > 0 ? (parent.getWidth() - parent.getPaddingLeft() - parent.getPaddingRight()) / (float) dockSize : 0f;
         if (!singleRow && dockSize > 0 && cardWidth > 0) {
-            float cell = (parent.getWidth() - parent.getPaddingLeft() - parent.getPaddingRight()) / (float) dockSize;
             float sides = firstLeft - rect.left;   // the band's padding at the sides
             fullRight = firstLeft + (dockSize - 1) * cell + cardWidth + sides;
         }
         if (edgeListener != null && (Math.abs(rect.left - edgeLeft) > 1f || Math.abs(fullRight - edgeRight) > 1f)) {
             edgeLeft = rect.left;
             edgeRight = fullRight;
-            final float l = rect.left, r = fullRight;
-            parent.post(() -> edgeListener.onBand(l, r));   // not from inside a draw pass
+            final float l = rect.left, r = fullRight, tl = firstLeft, pitch = cell;
+            final int tw = cardWidth, th = cardHeight;
+            parent.post(() -> edgeListener.onBand(l, r, tl, pitch, tw, th));   // not from inside a draw pass
         }
         c.drawRoundRect(rect, radius, radius, band);
         c.drawRoundRect(rect, radius, radius, edge);

@@ -78,9 +78,8 @@ final class KeepWatching {
     private final File cacheDir;
     private final float density;
     private List<Item> items = new ArrayList<>();
-    private int cardWidth;   // 0: the layout's own width
+    private int cardWidth, cardHeight, cardGap;   // a dock tile's size and the space to the next; 0: the layout's own
     private int accent;      // the scene's accent for the progress bars; 0 keeps the default
-    private int bandPx;      // the dock band's width the row lines up with
     private String signature = "";
     private int lastWant = -1;
     private boolean swept;
@@ -96,35 +95,56 @@ final class KeepWatching {
         list.setItemAnimator(null);
         list.setHasFixedSize(true);
         list.setAdapter(new Adapter());
-        list.addItemDecoration(new EdgeShadow(density));
+        list.addItemDecoration(new EdgeHint(density));
+        // The space to the next card, and none after the last: at the end of the row the last card is in the last column.
+        list.addItemDecoration(new RecyclerView.ItemDecoration() {
+            @Override
+            public void getItemOffsets(@NonNull android.graphics.Rect out, @NonNull View view, @NonNull RecyclerView parent,
+                                       @NonNull RecyclerView.State state) {
+                int pos = parent.getChildAdapterPosition(view);
+                boolean last = pos == state.getItemCount() - 1;
+                if (parent.getLayoutDirection() == View.LAYOUT_DIRECTION_RTL) out.left = last ? 0 : cardGap;
+                else out.right = last ? 0 : cardGap;
+            }
+        });
     }
 
     /**
-     * A soft dark shade over the row's left and right edges, drawn only on a side that has more cards beyond it, so a
-     * card cut by the edge reads as continuing rather than as clipped. Dark over any scene, and no offscreen layer.
+     * A small chevron in the space beside the first or last column, drawn only on a side that has more cards beyond
+     * it. The cards sit in the dock's columns and the space between two of them is wider than the space beside the
+     * row, so a card that does not fit is not seen at all: the chevron is what says the row goes on.
      */
-    private static final class EdgeShadow extends RecyclerView.ItemDecoration {
-        private final float length;
-        private final android.graphics.Paint left = new android.graphics.Paint(), right = new android.graphics.Paint();
-        private int shadedFor;
+    private static final class EdgeHint extends RecyclerView.ItemDecoration {
+        private final float density;
+        private final android.graphics.Paint stroke = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+        private final android.graphics.Path path = new android.graphics.Path();
 
-        EdgeShadow(float density) {
-            length = 56 * density;
+        EdgeHint(float density) {
+            this.density = density;
+            stroke.setStyle(android.graphics.Paint.Style.STROKE);
+            stroke.setStrokeWidth(2.5f * density);
+            stroke.setStrokeCap(android.graphics.Paint.Cap.ROUND);
+            stroke.setStrokeJoin(android.graphics.Paint.Join.ROUND);
+            stroke.setColor(0xD9FFFFFF);
+            stroke.setShadowLayer(4 * density, 0, density, 0x99000000);
         }
 
         @Override
         public void onDrawOver(@NonNull android.graphics.Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
             int w = parent.getWidth(), h = parent.getHeight();
             if (w == 0) return;
-            if (shadedFor != w) {
-                int[] colors = {0xB3000000, 0x00000000};
-                left.setShader(new android.graphics.LinearGradient(0, 0, length, 0, colors, null, android.graphics.Shader.TileMode.CLAMP));
-                right.setShader(new android.graphics.LinearGradient(w, 0, w - length, 0, colors, null, android.graphics.Shader.TileMode.CLAMP));
-                shadedFor = w;
-            }
-            float top = parent.getPaddingTop(), bottom = h - parent.getPaddingBottom();   // the cards, not their padding
-            if (parent.canScrollHorizontally(-1)) c.drawRect(0, top, length, bottom, left);   // see KeepWatching.focusFirst for the end nudge
-            if (parent.canScrollHorizontally(1)) c.drawRect(w - length, top, w, bottom, right);
+            float cy = (parent.getPaddingTop() + h - parent.getPaddingBottom()) / 2f;
+            if (parent.canScrollHorizontally(-1)) chevron(c, parent.getPaddingLeft() / 2f, cy, -1);
+            if (parent.canScrollHorizontally(1)) chevron(c, w - parent.getPaddingRight() / 2f, cy, 1);
+        }
+
+        private void chevron(android.graphics.Canvas c, float cx, float cy, int dir) {
+            float half = 7 * density, depth = 3.5f * density;
+            path.rewind();
+            path.moveTo(cx - dir * depth, cy - half);
+            path.lineTo(cx + dir * depth, cy);
+            path.lineTo(cx - dir * depth, cy + half);
+            c.drawPath(path, stroke);
         }
     }
 
@@ -190,35 +210,28 @@ final class KeepWatching {
         }
     }
 
-    /** Lines the row up with the dock band: it starts at the band's left edge, ends at its right, and three cards fill it. */
-    void alignTo(int left, int right) {
-        int wrap = ((View) block.getParent()).getWidth();
-        if (right - left <= 0 || wrap <= 0) return;
-        // The list reaches zoomRoom past the band on both sides, so a focused card's zoom is not cut; its first card
-        // still starts on the band's left edge, and the peeking card fades out under the edge shade.
-        int zoomRoom = (int) (16 * density);
-        int padStart = Math.max(0, left - zoomRoom), padEnd = Math.max(0, wrap - right - zoomRoom);
-        block.setPaddingRelative(padStart, block.getPaddingTop(), padEnd, block.getPaddingBottom());
-        list.setPaddingRelative(left - padStart, list.getPaddingTop(), wrap - right - padEnd, list.getPaddingBottom());
-        View heading = ((ViewGroup) block).getChildAt(0);
-        heading.setPaddingRelative(left - padStart - (int) (6 * density), heading.getPaddingTop(), 0, heading.getPaddingBottom());
-        // New padding with an old scroll offset left the cards short of the band's edge: back to the start, unless
-        // someone is in the row.
-        if (!list.hasFocus()) ((LinearLayoutManager) list.getLayoutManager()).scrollToPositionWithOffset(0, 0);
-        bandPx = right - left;
-        sizeCards();
-    }
-
     /**
-     * Three cards fill the band exactly. With more than three the fourth shows its first part at the band's right
-     * edge (cards are 3.4 across), so it is clear the row scrolls; the row clips at the band, never at the screen.
+     * Puts the cards in the dock tiles' columns at the tiles' size: the first card over the first tile, each next one
+     * a tile's pitch further, as many across as the dock has columns. With more cards than columns the row scrolls a
+     * column at a time, and EdgeHint's chevron says which way there is more.
      */
-    private void sizeCards() {
-        if (bandPx <= 0) return;
-        int gap = (int) (10 * density);
-        int width = items.size() > 3 ? Math.round((bandPx - 3 * gap) / 3.4f) : (bandPx - 2 * gap) / 3;
-        if (width > 0 && width != cardWidth) {
-            cardWidth = width;
+    void alignTo(float tileLeft, float pitch, int tileWidth, int tileHeight, int columns) {
+        int wrap = ((View) block.getParent()).getWidth();
+        if (tileWidth <= 0 || tileHeight <= 0 || pitch <= 0 || wrap <= 0) return;
+        int start = Math.round(tileLeft);
+        int end = Math.max(0, wrap - Math.round(tileLeft + (columns - 1) * pitch + tileWidth));
+        block.setPaddingRelative(0, block.getPaddingTop(), 0, block.getPaddingBottom());
+        list.setPaddingRelative(start, list.getPaddingTop(), end, list.getPaddingBottom());
+        View heading = ((ViewGroup) block).getChildAt(0);
+        heading.setPaddingRelative(Math.max(0, start - (int) (6 * density)), heading.getPaddingTop(), 0, heading.getPaddingBottom());
+        // New padding with an old scroll offset left the cards off their columns: back to the start, unless someone
+        // is in the row.
+        if (!list.hasFocus()) ((LinearLayoutManager) list.getLayoutManager()).scrollToPositionWithOffset(0, 0);
+        int gap = Math.round(pitch) - tileWidth;
+        if (tileWidth != cardWidth || tileHeight != cardHeight || gap != cardGap) {
+            cardWidth = tileWidth;
+            cardHeight = tileHeight;
+            cardGap = gap;
             list.getAdapter().notifyDataSetChanged();
         }
     }
@@ -237,7 +250,6 @@ final class KeepWatching {
         if (!now.equals(signature)) {
             signature = now;
             items = got;
-            sizeCards();
             list.getAdapter().notifyDataSetChanged();
             for (Item it : got) loadArt(it.art);
         }
@@ -301,7 +313,19 @@ final class KeepWatching {
         return out;
     }
 
-    private final java.util.Map<String, android.graphics.drawable.Drawable> icons = new HashMap<>();
+    private final java.util.Map<String, android.graphics.drawable.Drawable> icons = new HashMap<>(), banners = new HashMap<>();
+
+    /** The app's TV banner, shown on a card whose show has no picture; cached for the session, null when there is none. */
+    private android.graphics.drawable.Drawable appBanner(String pkg) {
+        if (banners.containsKey(pkg)) return banners.get(pkg);
+        android.graphics.drawable.Drawable d = null;
+        try {
+            d = activity.getPackageManager().getApplicationBanner(pkg);
+        } catch (Exception ignored) {
+        }
+        banners.put(pkg, d);
+        return d;
+    }
 
     /** The app's own icon for the badge on its cards; cached for the session, null when there is none. */
     private android.graphics.drawable.Drawable appIcon(String pkg) {
@@ -454,17 +478,20 @@ final class KeepWatching {
         @Override
         public void onBindViewHolder(@NonNull Holder h, int position) {
             Item it = items.get(position);
-            h.app.setText(it.app);
             h.icon.setImageDrawable(appIcon(it.pkg));
-            h.title.setText(it.title);
-            h.sub.setText(it.sub);
-            h.sub.setVisibility(it.sub.isEmpty() ? View.GONE : View.VISIBLE);
             h.progress.setVisibility(it.progress > 0 ? View.VISIBLE : View.INVISIBLE);
             h.progress.setProgress(it.progress);
             if (accent != 0) h.progress.setProgressTintList(android.content.res.ColorStateList.valueOf(accent));
             Bitmap b = it.art == null ? null : thumbs.get(it.art);
-            h.thumb.setImageBitmap(b);
-            if (cardWidth > 0) h.itemView.getLayoutParams().width = cardWidth;
+            if (b != null) {
+                h.thumb.setImageBitmap(b);
+                h.title.setVisibility(View.GONE);
+            } else {   // no picture (yet): the app's banner when it has one, and the title written on the card
+                h.thumb.setImageDrawable(appBanner(it.pkg));
+                h.title.setText(it.title);
+                h.title.setVisibility(View.VISIBLE);
+            }
+            h.size(cardWidth, cardHeight);
             h.itemView.setContentDescription(it.app + ", " + describe(it));   // read out by TalkBack
             h.itemView.setOnClickListener(v -> open(it));
         }
@@ -476,17 +503,41 @@ final class KeepWatching {
 
         final class Holder extends RecyclerView.ViewHolder {
             final ImageView thumb;
-            final TextView app, title, sub;
+            final TextView title;
             final ImageView icon;
             final ProgressBar progress;
+            private int sizedFor;
+
+            /** A dock tile's size and corners, and the focus rim drawn over the picture at those corners. */
+            void size(int width, int height) {
+                if (width <= 0 || width == sizedFor) return;
+                sizedFor = width;
+                ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) itemView.getLayoutParams();
+                lp.width = width;
+                lp.height = height;
+                itemView.setLayoutParams(lp);
+                final float radius = AppAdapter.cornerRadius(width, density);
+                itemView.setOutlineProvider(new android.view.ViewOutlineProvider() {
+                    @Override
+                    public void getOutline(View view, android.graphics.Outline outline) {
+                        outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), radius);
+                    }
+                });
+                itemView.setClipToOutline(true);
+                android.graphics.drawable.GradientDrawable rim = new android.graphics.drawable.GradientDrawable();
+                rim.setCornerRadius(radius);
+                rim.setStroke(Math.round(2 * density), activity.getColor(R.color.glass_focus_rim));
+                android.graphics.drawable.StateListDrawable focus = new android.graphics.drawable.StateListDrawable();
+                focus.addState(new int[]{android.R.attr.state_focused}, rim);
+                focus.addState(new int[0], new android.graphics.drawable.ColorDrawable(0));
+                itemView.setForeground(focus);
+            }
 
             Holder(View v) {
                 super(v);
                 thumb = v.findViewById(R.id.watchThumb);
-                app = v.findViewById(R.id.watchApp);
                 icon = v.findViewById(R.id.watchAppIcon);
                 title = v.findViewById(R.id.watchTitle);
-                sub = v.findViewById(R.id.watchSub);
                 progress = v.findViewById(R.id.watchProgress);
                 v.setOnFocusChangeListener((view, has) -> {
                     if (has) {
@@ -497,7 +548,7 @@ final class KeepWatching {
                 Focus.attach(v, true, false, (view, code, event) -> {
                     if (event.getAction() == android.view.KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) nudgeAtEnds(view, code);
                     return false;
-                });   // zoom, press dip, the end nudge; the glass turns bright through watch_card_bg
+                });   // zoom, press dip, the end nudge; the rim comes from size()
             }
         }
     }
