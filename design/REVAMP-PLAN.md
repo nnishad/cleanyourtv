@@ -296,3 +296,15 @@ screen. Not measured on the TV: items 7 to 9 add animation and a full-screen cop
 scene turning with the timings shortened for the test, wake on a key, removing a card). Someone else was
 pressing keys on the emulator during two of the idle runs, which were repeated.
 
+## 10. Cleanup and languages (2026-11-14, emulator only)
+
+- **Removed:** `LauncherSettingsActivity` and its layout (every opener now opens the Home settings sheet),
+  `calm_tiles`, and the strings, drawables and colours they left unused, in every language.
+- **Languages:** the 134 strings this fork added (Home settings, scene names, Keep watching, tips, and the weather
+  conditions, which were English in code before) are translated into the launcher's 30 languages. Machine
+  translated, each from the language's existing strings for terminology; checked for complete keys and intact
+  placeholders, and looked at on the emulator in French, Arabic and Simplified Chinese (`"locale"` in a theme).
+  Not reviewed by native speakers. The launcher follows the TV's language; there is no Hindi among the 30.
+- **Known:** in Arabic and Hebrew the text is right-aligned but the sheet's icons and switches keep their sides,
+  as upstream's own screens do (the app does not opt into full RTL layout).
+
