@@ -409,10 +409,10 @@ final class KeepWatching {
     }
 
     /** "Planet Earth III  ·  S1 E4  ·  23 min left": the show, where you are, and how long is left. */
-    private static String describe(Item it) {
+    private String describe(Item it) {
         StringBuilder s = new StringBuilder(it.title);
         if (!it.sub.isEmpty()) s.append("  \u00B7  ").append(it.sub);
-        if (it.leftMs >= 60_000L) s.append("  \u00B7  ").append(it.leftMs / 60_000L).append(" min left");
+        if (it.leftMs >= 60_000L) s.append("  \u00B7  ").append(activity.getString(R.string.kw_min_left, (int) (it.leftMs / 60_000L)));
         return s.toString();
     }
 
@@ -465,6 +465,7 @@ final class KeepWatching {
             Bitmap b = it.art == null ? null : thumbs.get(it.art);
             h.thumb.setImageBitmap(b);
             if (cardWidth > 0) h.itemView.getLayoutParams().width = cardWidth;
+            h.itemView.setContentDescription(it.app + ", " + describe(it));   // read out by TalkBack
             h.itemView.setOnClickListener(v -> open(it));
         }
 

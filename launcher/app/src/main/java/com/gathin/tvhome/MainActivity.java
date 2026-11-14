@@ -1210,6 +1210,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             cameBack = false;
             arrive();
         }
+        if (couchMenus) root.postDelayed(this::firstRunTips, 1500L);
         if (sceneView != null) {
             sceneView.followTime();     // evening came, or fog: the scene that goes with it
             sceneView.ensureLoaded();   // dropped by onTrimMemory
@@ -1496,6 +1497,28 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         contextLine.setAlpha(0f);
         contextLine.animate().alpha(1f).setDuration(Motion.STANDARD).setInterpolator(Motion.ENTER).start();
+    }
+
+    /**
+     * The first time Home shows (design/REVAMP-PLAN.md 3.6): three one-line tips on the context line, five seconds
+     * each, then never again. A key press on the way does not stop them; focus changes simply take the line over.
+     */
+    private void firstRunTips() {
+        SharedPreferences prefs = getSharedPreferences("revamp", MODE_PRIVATE);
+        if (!resumed || contextLine == null || prefs.getBoolean("tips_shown", false)) return;
+        prefs.edit().putBoolean("tips_shown", true).apply();
+        int[] tips = {R.string.tip_move, R.string.tip_up, R.string.tip_gear};
+        for (int i = 0; i < tips.length; i++) {
+            final int tip = tips[i];
+            root.postDelayed(() -> {
+                if (resumed) showContext(getString(tip));
+            }, i * 5000L);
+        }
+        root.postDelayed(() -> {   // back to naming what has focus
+            if (!resumed) return;
+            int tile = focusedTilePosition();
+            showContext(tile >= 0 ? adapter.labelAt(tile) : "");
+        }, tips.length * 5000L);
     }
 
     /** Home left for an app: the next return plays the arrival. */
@@ -3934,9 +3957,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (couchMenus) {
             // As in couch-tv: the TV's inputs, then the two settings people look for from here.
             if (rows.getChildCount() > 0) addSeparator(rows);
-            addInputRow(rows, popup, R.drawable.ic_bluetooth, "Bluetooth", -1,
+            addInputRow(rows, popup, R.drawable.ic_bluetooth, getString(R.string.inputs_bluetooth), -1,
                     () -> open(systemIntent(Settings.ACTION_BLUETOOTH_SETTINGS)));
-            addInputRow(rows, popup, R.drawable.ic_wifi, "Network", -1,
+            addInputRow(rows, popup, R.drawable.ic_wifi, getString(R.string.inputs_network), -1,
                     () -> open(systemIntent(Settings.ACTION_WIFI_SETTINGS)));
         }
         if (rows.getChildCount() == 0) {
@@ -4095,11 +4118,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
         LinearLayout rows = panel.findViewById(R.id.rows);
         PopupWindow popup = glassPopup(panel, (int) (320 * density));
-        addGearRow(rows, popup, R.drawable.ic_home_settings_pill, "Home settings",
-                "Scenes, rows, weather and apps",
+        addGearRow(rows, popup, R.drawable.ic_home_settings_pill, getString(R.string.gear_home),
+                getString(R.string.gear_home_note),
                 () -> startActivityForResult(new Intent(this, CouchSettingsActivity.class), LAUNCHER_SETTINGS_REQUEST));
-        addGearRow(rows, popup, R.drawable.ic_settings, "TV settings",
-                "Wi-Fi, picture, sound and the rest of the TV", () -> open(systemIntent(Settings.ACTION_SETTINGS)));
+        addGearRow(rows, popup, R.drawable.ic_settings, getString(R.string.gear_tv),
+                getString(R.string.gear_tv_note), () -> open(systemIntent(Settings.ACTION_SETTINGS)));
         panel.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
         popup.setWidth(Math.max((int) (320 * density), Math.min(panel.getMeasuredWidth(), (int) (420 * density))));
         dropIn(popup, panel, anchor, getResources().getBoolean(R.bool.rtl_menu_bar) ? Gravity.START : Gravity.END);

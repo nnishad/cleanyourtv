@@ -26,17 +26,17 @@ public final class CouchSettingsActivity extends Activity {
 
     private static final int REQUEST_LAUNCHER = 7, REQUEST_WATCH_NEXT = 8;
     private static final String WATCH_NEXT_PERMISSION = "android.permission.READ_TV_LISTINGS";
-    private static final String[] SECTIONS = {"Look and scenes", "Home rows", "Weather", "Apps", "About"};
+    private static final int[] SECTIONS = {R.string.hs_sec_look, R.string.hs_sec_rows, R.string.hs_sec_weather, R.string.hs_sec_apps, R.string.hs_sec_about};
     private static final int[] SECTION_ICONS = {R.drawable.ic_settings_look, R.drawable.ic_settings_rows,
             R.drawable.ic_settings_weather, R.drawable.ic_settings_apps, R.drawable.ic_settings_about};
     private static final String[] SCENE_IDS = {"", "random", "night", "golden", "water", "fog", "dawn"};
-    private static final String[] SCENE_NAMES = {"Follows the time", "Different each start", "Night", "Golden hour", "Waterline", "Fog", "Dawn"};
+    private static final int[] SCENE_NAMES = {R.string.hs_scene_time, R.string.hs_scene_random, R.string.hs_scene_night, R.string.hs_scene_golden, R.string.hs_scene_water, R.string.hs_scene_fog, R.string.hs_scene_dawn};
     private static final String[] CLOCK_IDS = {"system", "12", "24"};
-    private static final String[] CLOCK_NAMES = {"As the TV is set", "12-hour", "24-hour"};
+    private static final int[] CLOCK_NAMES = {R.string.hs_clock_tv, R.string.hs_clock_12, R.string.hs_clock_24};
     private static final int[] HIDE_SECONDS = {0, 30, 60, 120, 300};
-    private static final String[] HIDE_NAMES = {"Off", "30 seconds", "1 minute", "2 minutes", "5 minutes"};
+    private static final int[] HIDE_NAMES = {R.string.hs_idle_off, R.string.hs_30s, R.string.hs_1m, R.string.hs_2m, R.string.hs_5m};
     private static final int[] IDLE_MINUTES = {0, 5, 10, 15, 30};
-    private static final String[] IDLE_NAMES = {"Off", "5 minutes", "10 minutes", "15 minutes", "30 minutes"};
+    private static final int[] IDLE_NAMES = {R.string.hs_idle_off, R.string.hs_5m, R.string.hs_10m, R.string.hs_15m, R.string.hs_30m};
     private static final String[] OWN_KEYS = {"scenes", "scene", "watch_row", "hide_rows_idle_seconds",
             "home_idle_clock_minutes", "show_weather", "hide_tile_names"};
 
@@ -70,7 +70,7 @@ public final class CouchSettingsActivity extends Activity {
         sheetLp.gravity = Gravity.END;
         root.addView(sheet, sheetLp);
 
-        paneTitle = text("Home settings", 28, Color.WHITE, true);
+        paneTitle = text(getString(R.string.hs_title), 28, Color.WHITE, true);
         paneTitle.setPadding(dp(6), 0, 0, dp(4));
         sheet.addView(paneTitle);
         crumb = text("", 14, getColor(R.color.text_tertiary), false);
@@ -99,9 +99,9 @@ public final class CouchSettingsActivity extends Activity {
     /** The first level: one row per section, with what it holds. */
     private void showSections(int focus) {
         section = -1;
-        paneTitle.setText("Home settings");
-        crumb.setText("Changes show on Home straight away");
-        hint.setText("OK to open, Back to close");
+        paneTitle.setText(R.string.hs_title);
+        crumb.setText(R.string.hs_subtitle);
+        hint.setText(R.string.hs_hint_sections);
         paneRows.removeAllViews();
         for (int i = 0; i < SECTIONS.length; i++) {
             final int index = i;
@@ -139,8 +139,8 @@ public final class CouchSettingsActivity extends Activity {
     private void showSection(int index) {
         section = index;
         paneTitle.setText(SECTIONS[index]);
-        crumb.setText("Home settings");
-        hint.setText("OK to change, Back for all settings");
+        crumb.setText(R.string.hs_title);
+        hint.setText(R.string.hs_hint_rows);
         paneRows.removeAllViews();
         switch (index) {
             case 0:
@@ -172,28 +172,28 @@ public final class CouchSettingsActivity extends Activity {
     }
 
     private void lookPane() {
-        toggle("Scenes", "scenes", config.scenes, "The big glass clock inside a landscape");
+        toggle(R.string.hs_scenes, "scenes", config.scenes, getString(R.string.hs_scenes_note));
         if (config.scenes) {
             int at = 0;
             for (int i = 0; i < SCENE_IDS.length; i++) if (SCENE_IDS[i].equalsIgnoreCase(config.scene)) at = i;
-            cycle("Scene", null, SCENE_NAMES, at, v -> choices.edit().putString("scene", SCENE_IDS[v]).apply());
+            cycle(R.string.hs_scene, null, SCENE_NAMES, at, v -> choices.edit().putString("scene", SCENE_IDS[v]).apply());
         }
-        toggleInverted("App names", "hide_tile_names", config.hideTileNames, "Under the focused tile and inside icon tiles");
+        toggleInverted(R.string.hs_app_names, "hide_tile_names", config.hideTileNames, getString(R.string.hs_app_names_note));
         int clock = 0;
         for (int i = 0; i < CLOCK_IDS.length; i++) if (CLOCK_IDS[i].equals(config.clockFormat)) clock = i;
-        cycle("Clock", null, CLOCK_NAMES, clock, v -> choices.edit().putString(Config.CLOCK_FORMAT_KEY, CLOCK_IDS[v]).apply());
+        cycle(R.string.hs_clock, null, CLOCK_NAMES, clock, v -> choices.edit().putString(Config.CLOCK_FORMAT_KEY, CLOCK_IDS[v]).apply());
     }
 
     private void rowsPane() {
-        toggle("Keep watching", "watch_row", config.watchRow, "Shows you were part way through, from your apps");
+        toggle(R.string.keep_watching, "watch_row", config.watchRow, getString(R.string.hs_watch_note));
         if (config.watchRow && checkSelfPermission(WATCH_NEXT_PERMISSION) != PackageManager.PERMISSION_GRANTED) {
-            action("Allow access to Watch Next", "Keep watching stays empty until this is allowed", () ->
+            action(getString(R.string.hs_allow_watch), getString(R.string.hs_allow_watch_note), () ->
                     requestPermissions(new String[]{WATCH_NEXT_PERMISSION}, REQUEST_WATCH_NEXT));
         }
-        cycle("Hide rows when idle", "Leaves the scene, the clock and the weather; any button brings the rows back",
+        cycle(R.string.hs_hide_rows, getString(R.string.hs_hide_rows_note),
                 HIDE_NAMES, indexOf(HIDE_SECONDS, config.hideRowsIdleSeconds),
                 v -> choices.edit().putInt("hide_rows_idle_seconds", HIDE_SECONDS[v]).apply());
-        cycle("Ambient clock when idle", "A dim drifting clock, kind to the screen",
+        cycle(R.string.hs_ambient, getString(R.string.hs_ambient_note),
                 IDLE_NAMES, indexOf(IDLE_MINUTES, config.homeIdleClockMinutes),
                 v -> choices.edit().putInt("home_idle_clock_minutes", IDLE_MINUTES[v]).apply());
     }
@@ -202,23 +202,23 @@ public final class CouchSettingsActivity extends Activity {
         boolean configured = !getString(R.string.weather_place).trim().isEmpty()
                 && !getString(R.string.latitude).trim().isEmpty();
         boolean on = choices.getBoolean("show_weather", getResources().getBoolean(R.bool.show_weather)) && configured;
-        toggle("Show weather", "show_weather", on, configured ? "One small request every 30 minutes while Home is on" : "No place is set");
-        action("Place: " + (configured ? getString(R.string.weather_place) : "none"),
-                "Set with weather_place, latitude and longitude in config.xml", null);
+        toggle(R.string.hs_show_weather, "show_weather", on, getString(configured ? R.string.hs_weather_note : R.string.hs_weather_none));
+        action(getString(R.string.hs_place, configured ? getString(R.string.weather_place) : getString(R.string.hs_place_none)),
+                getString(R.string.hs_place_note), null);
     }
 
     private void appsPane() {
-        action("Reorder apps", "Move tiles with the remote", () -> {
+        action(getString(R.string.hs_reorder), getString(R.string.hs_reorder_note), () -> {
             setResult(RESULT_OK, new Intent().putExtra(LauncherSettingsActivity.EXTRA_REORDER, true));
             finish();
         });
-        action("Grid, dock and wallpaper", "Columns, rows, dock opacity, effects and more", () ->
+        action(getString(R.string.hs_grid), getString(R.string.hs_grid_note), () ->
                 startActivityForResult(new Intent(this, LauncherSettingsActivity.class), REQUEST_LAUNCHER));
     }
 
     private void aboutPane() {
-        action("CleanYourTV launcher " + versionName(), "With the couch-tv look: scenes, Keep watching and the idle options", null);
-        action("Reset these choices", "Back to what the theme says", () -> {
+        action(getString(R.string.hs_about, versionName()), getString(R.string.hs_about_note), null);
+        action(getString(R.string.hs_reset), getString(R.string.hs_reset_note), () -> {
             SharedPreferences.Editor e = choices.edit();
             for (String key : OWN_KEYS) e.remove(key);
             e.remove(Config.CLOCK_FORMAT_KEY);
@@ -239,9 +239,9 @@ public final class CouchSettingsActivity extends Activity {
 
     // ---- row kinds ---------------------------------------------------------------------------------------
 
-    private void toggle(String label, String key, boolean current, String note) {
+    private void toggle(int label, String key, boolean current, String note) {
         final int at = paneRows.getChildCount();
-        paneRows.addView(row(label, note, current ? "On" : "Off", () -> {
+        paneRows.addView(row(getString(label), note, getString(current ? R.string.on : R.string.off), () -> {
             choices.edit().putBoolean(key, !current).apply();
             changed();
             config = Config.load(this);
@@ -250,9 +250,9 @@ public final class CouchSettingsActivity extends Activity {
     }
 
     /** A toggle whose stored switch means the opposite of what the row says: "App names" On is hide_tile_names false. */
-    private void toggleInverted(String label, String key, boolean hidden, String note) {
+    private void toggleInverted(int label, String key, boolean hidden, String note) {
         final int at = paneRows.getChildCount();
-        paneRows.addView(row(label, note, hidden ? "Off" : "On", () -> {
+        paneRows.addView(row(getString(label), note, getString(hidden ? R.string.off : R.string.on), () -> {
             choices.edit().putBoolean(key, !hidden).apply();
             changed();
             config = Config.load(this);
@@ -260,9 +260,9 @@ public final class CouchSettingsActivity extends Activity {
         }));
     }
 
-    private void cycle(String label, String note, String[] names, int selected, java.util.function.IntConsumer apply) {
+    private void cycle(int label, String note, int[] names, int selected, java.util.function.IntConsumer apply) {
         final int at = paneRows.getChildCount();
-        paneRows.addView(row(label, note, names[Math.max(0, Math.min(selected, names.length - 1))], () -> {
+        paneRows.addView(row(getString(label), note, getString(names[Math.max(0, Math.min(selected, names.length - 1))]), () -> {
             apply.accept((selected + 1) % names.length);
             changed();
             config = Config.load(this);
