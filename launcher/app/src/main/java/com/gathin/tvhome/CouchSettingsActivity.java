@@ -235,7 +235,7 @@ public final class CouchSettingsActivity extends Activity {
             final int at = paneRows.getChildCount();
             boolean isOn = !config.scenesOff.contains(id);
             int part = SceneView.partOf(id);
-            paneRows.addView(row(getString(sceneName(id)), part >= 0 ? getString(PART_NAMES[part]) : null,
+            View row = row(getString(sceneName(id)), part >= 0 ? getString(PART_NAMES[part]) : null,
                     getString(isOn ? R.string.on : R.string.off), () -> {
                         java.util.Set<String> off = new java.util.LinkedHashSet<>(config.scenesOff);
                         if (isOn && SceneView.ids().length - countOff() <= 1) {
@@ -248,8 +248,29 @@ public final class CouchSettingsActivity extends Activity {
                         changed();
                         config = Config.load(this);
                         rebuild(at);
-                    }));
+                    });
+            ((LinearLayout) row).addView(thumbnail(id, isOn), 0);
+            paneRows.addView(row);
         }
+    }
+
+    /** A small picture of the scene at the start of its row, faded when the scene is off. */
+    private View thumbnail(String id, boolean isOn) {
+        ImageView image = new ImageView(this);
+        try (java.io.InputStream in = getAssets().open("scenes/thumbs/" + id + ".jpg")) {
+            image.setImageBitmap(android.graphics.BitmapFactory.decodeStream(in));
+        } catch (java.io.IOException ignored) {
+        }
+        image.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        android.graphics.drawable.GradientDrawable shape = new android.graphics.drawable.GradientDrawable();
+        shape.setCornerRadius(getResources().getDimension(R.dimen.radius_s));
+        image.setBackground(shape);
+        image.setClipToOutline(true);
+        image.setAlpha(isOn ? 1f : 0.4f);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(96), dp(54));
+        lp.setMarginEnd(dp(16));
+        image.setLayoutParams(lp);
+        return image;
     }
 
     private static int sceneName(String id) {
