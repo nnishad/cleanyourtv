@@ -4,15 +4,12 @@
 # (launcher/build-and-install.sh keeps its Home safety checks); this one only runs them in order and stops, before
 # the TV is touched, when something the later steps need is missing.
 #
-# Usage: tools/install-cursed.sh [<tv ip>] [--weather "Place,latitude,longitude"] [--no-build] [--yes]
+# Usage: tools/install-cursed.sh [<tv ip>] [--no-build] [--yes]
 #        tools/install-cursed.sh --find         only list the TVs on this Wi-Fi
 #   With no address it looks for TVs on this Wi-Fi (devices with network debugging switched on), lists them, and asks
 #   which one is yours. Before it changes anything it shows what the TV is and asks once more; --yes skips that
 #   question (a script or an assistant passes it after the person has said yes).
 #   --subnet    the network to search when it is not the usual /24 around this computer, e.g. 192.168.1.0/24
-#   --weather   show "23° Clear" beside the date, for that place (one small request to Open-Meteo every 30 minutes
-#               while Home is on screen). Without it the launcher makes no network request at all.
-#               Example: --weather "Vilnius,54.69,25.28". It edits launcher/app/src/main/res/values/config.xml.
 #   --no-build  install the APK already built (launcher/app/build/outputs/apk/release/app-release.apk)
 # BUILD=docker or BUILD=native forces the way the launcher is built; by default a computer with the Android SDK builds
 # natively and one without builds in Docker (tools/docker-build.sh), so it needs nothing else installed.
@@ -20,15 +17,14 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-WEATHER=""; NO_BUILD=0; TV="${TV_HOST:-}"; YES=0; FIND=0; SUBNET=""
+NO_BUILD=0; TV="${TV_HOST:-}"; YES=0; FIND=0; SUBNET=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --yes|-y) YES=1; shift ;;
     --find) FIND=1; shift ;;
     --subnet) SUBNET="${2:-}"; [ -n "$SUBNET" ] || { echo "ERROR: --subnet needs a network like 192.168.1.0/24." >&2; exit 2; }; shift 2 ;;
-    --weather) WEATHER="${2:-}"; [ -n "$WEATHER" ] || { echo "ERROR: --weather needs \"Place,latitude,longitude\"." >&2; exit 2; }; shift 2 ;;
     --no-build) NO_BUILD=1; shift ;;
-    -h|--help) sed -n 2,24p "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n 2,22p "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     -*) echo "ERROR: unknown option $1 (see --help)." >&2; exit 2 ;;
     *) TV="$1"; shift ;;
   esac
@@ -164,24 +160,6 @@ if [ "$YES" != 1 ]; then
 fi
 
 step "3/5  Building the launcher"
-if [ -n "$WEATHER" ]; then
-  python3 - "$WEATHER" <<'PY'
-import re, sys
-place, lat, lon = [p.strip() for p in sys.argv[1].split(",")]
-float(lat); float(lon)   # a typo stops here, before anything is built or sent
-p = "launcher/app/src/main/res/values/config.xml"
-s = open(p, encoding="utf-8").read()
-def put(name, value, kind="string"):
-    global s
-    tag = r'(<%s name="%s"[^>]*>)[^<]*(</%s>)' % (kind, name, kind)
-    if not re.search(tag, s):
-        sys.exit("config.xml has no " + name)
-    s = re.sub(tag, lambda m: m.group(1) + value + m.group(2), s, count=1)
-put("latitude", lat); put("longitude", lon); put("weather_place", place); put("show_weather", "true", "bool")
-open(p, "w", encoding="utf-8").write(s)
-print("Weather on for", place)
-PY
-fi
 APK=launcher/app/build/outputs/apk/release/app-release.apk
 if [ "$NO_BUILD" = 1 ]; then
   [ -f "$APK" ] || { echo "ERROR: --no-build, but $APK does not exist." >&2; exit 1; }
@@ -218,7 +196,8 @@ tools/theme.sh themes/cursed
 
 cat <<EOF
 
-Done. The TV now opens the Cursed home screen. Press the gear for Home settings: backgrounds, rows, the dock grid.
+Done. The TV now opens the Cursed home screen. Press the gear for Home settings: backgrounds, rows, the dock grid, and
+Weather > Place, where you type your city to show the weather beside the date.
 
 Before you leave it: switch USB and Network/Wireless debugging off in the TV's Developer options. While it is on, anyone
 on your Wi-Fi can control the TV. Then check from here:  $PY -I tools/adb-closed.py $TV_HOST

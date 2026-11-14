@@ -9,12 +9,16 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.text.InputType;
 import android.text.SpannableString;
 import android.text.style.ForegroundColorSpan;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -44,7 +48,7 @@ public final class CouchSettingsActivity extends Activity {
     private static final int[] SECTION_ICONS = {R.drawable.ic_settings_look, R.drawable.ic_settings_rows,
             R.drawable.ic_settings_apps, R.drawable.ic_settings_motion, R.drawable.ic_settings_weather,
             R.drawable.ic_settings_about};
-    private static final int PAGE_NONE = 0, PAGE_BACKGROUNDS = 1, PAGE_WALLPAPER = 2, PAGE_OPEN_ON_START = 3;
+    private static final int PAGE_NONE = 0, PAGE_BACKGROUNDS = 1, PAGE_WALLPAPER = 2, PAGE_OPEN_ON_START = 3, PAGE_PLACE = 4;
     private static final String[] SCENE_IDS = {"", "random", "golden", "water", "fog", "dawn", "bridge",
             "alpine", "ember", "highland", "lake", "snow", "city", "stars", "aurora", "tarn", "oldtown"};
     private static final int[] SCENE_NAMES = {R.string.hs_scene_time, R.string.hs_scene_random, R.string.hs_scene_golden, R.string.hs_scene_water, R.string.hs_scene_fog, R.string.hs_scene_dawn,
@@ -187,12 +191,13 @@ public final class CouchSettingsActivity extends Activity {
     private void showPage(int which, int from) {
         page = which;
         paneRows.removeAllViews();
-        int title = which == PAGE_BACKGROUNDS ? R.string.hs_backgrounds
-                : which == PAGE_WALLPAPER ? R.string.wallpaper_label : R.string.open_on_start_label;
-        heading(getString(title), getString(SECTIONS[section]),
-                which == PAGE_BACKGROUNDS ? R.string.hs_hint_backgrounds : R.string.hs_hint_page);
+        int title = which == PAGE_BACKGROUNDS ? R.string.hs_backgrounds : which == PAGE_WALLPAPER ? R.string.wallpaper_label
+                : which == PAGE_PLACE ? R.string.hs_place_label : R.string.open_on_start_label;
+        heading(getString(title), getString(SECTIONS[section]), which == PAGE_BACKGROUNDS ? R.string.hs_hint_backgrounds
+                : which == PAGE_PLACE ? R.string.hs_place_page_hint : R.string.hs_hint_page);
         if (which == PAGE_BACKGROUNDS) backgroundsPage();
         else if (which == PAGE_WALLPAPER) wallpaperPage();
+        else if (which == PAGE_PLACE) placePage();
         else openOnStartPage();
         comeIn(from);
     }
@@ -347,17 +352,16 @@ public final class CouchSettingsActivity extends Activity {
     }
 
     private void weatherPane() {
-        boolean configured = !getString(R.string.weather_place).trim().isEmpty()
-                && !getString(R.string.latitude).trim().isEmpty();
-        if (configured) {
-            boolean on = choices.getBoolean("show_weather", getResources().getBoolean(R.bool.show_weather));
-            toggle(R.string.hs_show_weather, getString(R.string.hs_weather_note), on,
+        WeatherPlace place = WeatherPlace.current(this);
+        if (place != null) {
+            toggle(R.string.hs_show_weather, getString(R.string.hs_weather_note),
+                    choices.getBoolean("show_weather", WeatherPlace.onByDefault(this)),
                     v -> choices.edit().putBoolean("show_weather", v).apply());
         } else {
             action(getString(R.string.hs_show_weather), getString(R.string.hs_weather_none), null);
         }
-        action(getString(R.string.hs_place, configured ? getString(R.string.weather_place) : getString(R.string.hs_place_none)),
-                getString(R.string.hs_place_note), null);
+        open(R.string.hs_place_label, getString(R.string.hs_place_set_note),
+                place != null ? place.name : getString(R.string.hs_place_none), PAGE_PLACE);
     }
 
     private void aboutPane() {
@@ -436,6 +440,95 @@ public final class CouchSettingsActivity extends Activity {
     private static int sceneName(String id) {
         for (int i = 0; i < SCENE_IDS.length; i++) if (SCENE_IDS[i].equals(id)) return SCENE_NAMES[i];
         return R.string.hs_scene;
+    }
+
+    /**
+     * Type a city, press Search on the keyboard, pick the place from what is found. The keyboard is the TV's own: OK on
+     * the field opens it. The field stays while results come and go below it.
+     */
+    private void placePage() {
+        final EditText field = new EditText(this);
+        field.setHint(R.string.hs_place_type);
+        field.setHintTextColor(getColor(R.color.text_tertiary));
+        field.setTextColor(Color.WHITE);
+        field.setTextSize(16);
+        field.setSingleLine(true);
+        field.setImeOptions(EditorInfo.IME_ACTION_SEARCH);
+        field.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
+        field.setBackgroundResource(R.drawable.settings_card_bg);
+        field.setPadding(dp(18), dp(14), dp(18), dp(14));
+        try {
+            field.setTypeface(getResources().getFont(R.font.outfit_medium));
+        } catch (RuntimeException ignored) {
+        }
+        LinearLayout.LayoutParams fieldLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        fieldLp.bottomMargin = dp(8);
+        paneRows.addView(field, fieldLp);
+
+        final TextView status = text("", 14, getColor(R.color.text_tertiary), false);
+        status.setPadding(dp(6), dp(2), 0, dp(10));
+        status.setVisibility(View.GONE);
+        paneRows.addView(status);
+        final LinearLayout results = new LinearLayout(this);
+        results.setOrientation(LinearLayout.VERTICAL);
+        paneRows.addView(results, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        if (WeatherPlace.chosen(this) != null) {
+            action(getString(R.string.hs_place_forget), null, () -> {
+                WeatherPlace.forget(this);
+                placeChosen();
+            });
+        }
+
+        field.setOnClickListener(v -> {
+            InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+            if (imm != null) imm.showSoftInput(field, 0);
+        });
+        field.setOnEditorActionListener((v, action, event) -> {
+            boolean enter = event != null && event.getAction() == KeyEvent.ACTION_DOWN
+                    && (event.getKeyCode() == KeyEvent.KEYCODE_ENTER || event.getKeyCode() == KeyEvent.KEYCODE_NUMPAD_ENTER);
+            if (action != EditorInfo.IME_ACTION_SEARCH && action != EditorInfo.IME_ACTION_DONE && !enter) return false;
+            InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+            if (imm != null) imm.hideSoftInputFromWindow(field.getWindowToken(), 0);
+            searchPlaces(field.getText().toString().trim(), status, results);
+            return true;
+        });
+    }
+
+    private void searchPlaces(String query, TextView status, LinearLayout results) {
+        results.removeAllViews();
+        if (query.isEmpty()) return;
+        status.setText(R.string.hs_place_searching);
+        status.setVisibility(View.VISIBLE);
+        final String language = java.util.Locale.getDefault().getLanguage();
+        new Thread(() -> {
+            final List<WeatherPlace> found = WeatherPlace.search(query, language);
+            runOnUiThread(() -> {
+                if (isDestroyed() || page != PAGE_PLACE) return;
+                results.removeAllViews();
+                if (found == null || found.isEmpty()) {
+                    status.setText(found == null ? R.string.hs_place_offline : R.string.hs_place_not_found);
+                    return;
+                }
+                status.setVisibility(View.GONE);
+                for (WeatherPlace place : found) {
+                    results.addView(row(place.name, place.where().isEmpty() ? null : place.where(), null, () -> {
+                        WeatherPlace.save(this, place);
+                        choices.edit().putBoolean("show_weather", true).apply();   // choosing a place turns the weather on
+                        placeChosen();
+                    }));
+                }
+                if (results.getChildCount() > 0) results.getChildAt(0).requestFocus();
+            });
+        }, "place-search").start();
+    }
+
+    /** A place was chosen or forgotten: Home rebuilds with it, and the Weather section is back in view. */
+    private void placeChosen() {
+        changed();
+        config = Config.load(this);
+        page = PAGE_NONE;
+        showSection(section, -1);
+        focusRow(pageRow);
     }
 
     /** The theme's own choice, each picture the theme brought, or none; the one in use carries a tick. */

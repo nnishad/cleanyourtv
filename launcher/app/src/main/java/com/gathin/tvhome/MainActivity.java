@@ -692,12 +692,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         shamsiDate = findViewById(R.id.shamsiDate);
         stats = findViewById(R.id.stats);
         weather = findViewById(R.id.weather);
-        weatherPlace = getString(R.string.weather_place).trim();
-        weatherLat = getString(R.string.latitude).trim();
-        weatherLon = getString(R.string.longitude).trim();
-        weatherOn = getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE)
-                .getBoolean("show_weather", getResources().getBoolean(R.bool.show_weather)) && !weatherPlace.isEmpty()
-                && !weatherLat.isEmpty() && !weatherLon.isEmpty();
+        // The place picked in Home settings, else the one config.xml names; with neither there is no weather.
+        WeatherPlace where = WeatherPlace.current(this);
+        weatherPlace = where != null ? where.name : "";
+        weatherLat = where != null ? where.lat : "";
+        weatherLon = where != null ? where.lon : "";
+        weatherOn = where != null && getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE)
+                .getBoolean("show_weather", WeatherPlace.onByDefault(this));
         raceCalendar = cfg.raceCalendar;
         racePanel = findViewById(R.id.racePanel);
         raceKicker = findViewById(R.id.raceKicker);

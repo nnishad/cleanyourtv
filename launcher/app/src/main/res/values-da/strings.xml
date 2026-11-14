@@ -155,9 +155,7 @@
     <string name="hs_show_weather">Vis vejr</string>
     <string name="hs_weather_note">Én lille forespørgsel hvert 30. minut, mens startskærmen er tændt</string>
     <string name="hs_weather_none">Intet sted er angivet</string>
-    <string name="hs_place">Sted: %1$s</string>
     <string name="hs_place_none">intet</string>
-    <string name="hs_place_note">Angives med weather_place, latitude og longitude i config.xml</string>
     <string name="hs_reorder">Flyt apps</string>
     <string name="hs_reorder_note">Flyt fliser med fjernbetjeningen</string>
     <string name="kw_remove">Fjern fra Se videre</string>
@@ -215,4 +213,12 @@
     <string name="wx_thunderstorm">Tordenvejr</string>
     <string name="wx_thunderstorm_hail">Tordenvejr med hagl</string>
     <string name="wx_feels_like">Føles som %1$d°C</string>
+    <string name="hs_place_label">Sted</string>
+    <string name="hs_place_set_note">Skriv din nærmeste by; vejrudsigten kommer fra Open-Meteo</string>
+    <string name="hs_place_type">Skriv en by</string>
+    <string name="hs_place_page_hint">OK for at skrive, derefter Søg; OK på et resultat for at vælge det, Tilbage for at gå tilbage</string>
+    <string name="hs_place_searching">Søger…</string>
+    <string name="hs_place_not_found">Intet sted fundet. Tjek stavningen.</string>
+    <string name="hs_place_offline">Kunne ikke søge. Tjek netværket.</string>
+    <string name="hs_place_forget">Glem stedet</string>
 </resources>

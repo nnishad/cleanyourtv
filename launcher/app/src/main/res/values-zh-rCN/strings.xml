@@ -201,9 +201,7 @@
     <string name="hs_show_weather">显示天气</string>
     <string name="hs_weather_note">主屏幕开启时每 30 分钟发送一次小请求</string>
     <string name="hs_weather_none">未设置地点</string>
-    <string name="hs_place">地点：%1$s</string>
     <string name="hs_place_none">无</string>
-    <string name="hs_place_note">在 config.xml 中用 weather_place、latitude 和 longitude 设置</string>
     <string name="hs_reorder">调整应用顺序</string>
     <string name="hs_reorder_note">用遥控器移动图块</string>
     <string name="kw_remove">从“继续观看”中移除</string>
@@ -261,4 +259,12 @@
     <string name="wx_thunderstorm">雷暴</string>
     <string name="wx_thunderstorm_hail">雷暴，冰雹</string>
     <string name="wx_feels_like">体感 %1$d°C</string>
+    <string name="hs_place_label">地点</string>
+    <string name="hs_place_set_note">输入离你最近的城市；预报来自 Open-Meteo</string>
+    <string name="hs_place_type">输入城市</string>
+    <string name="hs_place_page_hint">按确定输入，然后搜索；在结果上按确定选择，按返回退出</string>
+    <string name="hs_place_searching">正在搜索…</string>
+    <string name="hs_place_not_found">未找到地点。请检查拼写。</string>
+    <string name="hs_place_offline">无法搜索。请检查网络。</string>
+    <string name="hs_place_forget">忘记地点</string>
 </resources>

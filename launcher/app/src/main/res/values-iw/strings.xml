@@ -202,9 +202,7 @@
     <string name="hs_show_weather">הצגת מזג אוויר</string>
     <string name="hs_weather_note">בקשה קטנה אחת כל 30 דקות כשמסך הבית פעיל</string>
     <string name="hs_weather_none">לא הוגדר מקום</string>
-    <string name="hs_place">מקום: %1$s</string>
     <string name="hs_place_none">אין</string>
-    <string name="hs_place_note">מגדירים עם weather_place, latitude ו־longitude ב־config.xml</string>
     <string name="hs_reorder">סידור אפליקציות</string>
     <string name="hs_reorder_note">הזזת אריחים עם השלט</string>
     <string name="kw_remove">הסרה מהמשך צפייה</string>
@@ -262,4 +260,12 @@
     <string name="wx_thunderstorm">סופת רעמים</string>
     <string name="wx_thunderstorm_hail">סופת רעמים, ברד</string>
     <string name="wx_feels_like">מרגיש כמו %1$d°C</string>
+    <string name="hs_place_label">מקום</string>
+    <string name="hs_place_set_note">הקלידו את העיר הקרובה; התחזית מגיעה מ־Open-Meteo</string>
+    <string name="hs_place_type">הקלידו עיר</string>
+    <string name="hs_place_page_hint">אישור להקלדה ואז חיפוש; אישור על תוצאה לבחירה, חזרה לחזור</string>
+    <string name="hs_place_searching">מחפש…</string>
+    <string name="hs_place_not_found">לא נמצא מקום. בדקו את האיות.</string>
+    <string name="hs_place_offline">החיפוש נכשל. בדקו את הרשת.</string>
+    <string name="hs_place_forget">שכח את המקום</string>
 </resources>

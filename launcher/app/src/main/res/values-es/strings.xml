@@ -199,9 +199,7 @@
     <string name="hs_show_weather">Mostrar el tiempo</string>
     <string name="hs_weather_note">Una pequeña consulta cada 30 minutos mientras Inicio está en pantalla</string>
     <string name="hs_weather_none">No hay ningún lugar definido</string>
-    <string name="hs_place">Lugar: %1$s</string>
     <string name="hs_place_none">ninguno</string>
-    <string name="hs_place_note">Se define con weather_place, latitude y longitude en config.xml</string>
     <string name="hs_reorder">Reordenar apps</string>
     <string name="hs_reorder_note">Mueve los iconos con el mando</string>
     <string name="kw_remove">Quitar de Seguir viendo</string>
@@ -259,4 +257,12 @@
     <string name="wx_thunderstorm">Tormenta</string>
     <string name="wx_thunderstorm_hail">Tormenta, granizo</string>
     <string name="wx_feels_like">Sensación de %1$d°C</string>
+    <string name="hs_place_label">Lugar</string>
+    <string name="hs_place_set_note">Escribe tu ciudad más cercana; la previsión viene de Open-Meteo</string>
+    <string name="hs_place_type">Escribe una ciudad</string>
+    <string name="hs_place_page_hint">OK para escribir y luego Buscar; OK en un resultado para elegirlo, Atrás para volver</string>
+    <string name="hs_place_searching">Buscando…</string>
+    <string name="hs_place_not_found">No se ha encontrado el lugar. Revisa la ortografía.</string>
+    <string name="hs_place_offline">No se ha podido buscar. Revisa la red.</string>
+    <string name="hs_place_forget">Olvidar el lugar</string>
 </resources>

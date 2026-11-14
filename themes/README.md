@@ -84,7 +84,7 @@ A new key needs one there in the same pull request.
 | `watch_row` | bool | This fork: the Keep watching row above the dock, from Android's Watch Next list (needs `READ_TV_LISTINGS`, see `cursed/README.md`) |
 | `couch_menus` | bool | This fork: the gear opens Home settings or TV settings, and the Inputs list ends with Bluetooth and Network |
 | `hide_rows_idle_seconds` | number, 0 to 3600 | This fork: seconds Home sits untouched before its rows fade out, leaving the scene and clock; 0 is never |
-| `show_weather`, `weather_place` | bool, string | This fork, `config.xml` only: the weather line beside the date, for the place at `latitude` and `longitude`. Off as shipped; see `cursed/README.md` |
+| `show_weather`, `weather_place` | bool, string | This fork, `config.xml` only: the weather line beside the date, for a place fixed in the build (`weather_place`, `latitude`, `longitude`). Off as shipped. A person chooses their own on the TV, in Home settings > Weather > Place, and that wins; see `cursed/README.md` |
 | `hide_tile_names` | bool | This fork: no app names under the focused tile or inside icon tiles |
 | `dock_tight` | bool | This fork: the dock band hugs its tiles, and the rows above and beside it line up with its edges |
 | `live_tv_package`, `live_tv_action` | string | The Live TV app and, if it has no leanback entry, the action to start it with |
