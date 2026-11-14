@@ -47,7 +47,7 @@ Every layout, drawable and animation reads from these; no literals elsewhere.
 
 | Token | Values |
 |---|---|
-| Type scale (Outfit) | Caption 12 sp, Body 14 sp, Label 16 sp, Title 20 sp, Headline 28 sp; clock stays Antonio. Nothing under 12 sp (24 px) |
+| Type scale (Outfit) | Caption 12 sp, Body 14 sp, Label 16 sp, Title 20 sp, Headline 28 sp; the clock is Instrument Serif (Antonio until `21172321`, see section 7). Nothing under 12 sp (24 px) |
 | Radii | Small 12 dp (thumbnails, chips), Medium 20 dp (tiles, cards, rows), Large 28 dp (dock, sheets, popovers), Full (round buttons) |
 | Spacing | 4 dp grid: 4, 8, 12, 16, 24, 32, 48 |
 | Screen margins | Bands 24 dp from the sides (as now); all text and controls at least 48 dp from the sides and 27 dp from top and bottom |
@@ -81,7 +81,7 @@ Every layout, drawable and animation reads from these; no literals elsewhere.
   (`ActivityOptions` scale-up, drawn by the system).
 - **Scenes that know the time:** Dawn in the morning, Waterline by day, Golden hour in the evening,
   Night at night, Fog when the weather reading says fog, mist or heavy cloud. "Different each
-  start" stays as an option.
+  start" stays as an option. (Now 13 scenes in five parts of the day, each one switchable: section 7.)
 - **Arrival:** returning Home, rows rise 12 dp and fade in, 40 ms apart, once. Cold start skips it.
 
 ### 3.4 Menus and settings
@@ -154,3 +154,92 @@ Each phase ends with an emulator screenshot sheet for review; the TV install is 
 
 Not yet measured: frame times on the TV. The press dip, nudge, arrival and dim add short animations of
 small views only; `jank.sh` and `tools/bench.py` must confirm the phase 6 gates before this ships.
+
+## 7. After the revamp: scenes, clock and backgrounds (2026-11-14, emulator only)
+
+Everything below was built and checked with screenshots on the `TCL_TV_1080` emulator. The TV is still on tag
+`couch-port-v7` (before the revamp); nothing here has been installed on it.
+
+### 7.1 What changed
+
+| Change | Detail | Commit |
+|---|---|---|
+| Date line follows the clock | Drawn just above the digits (`spec.top - 12`), left-aligned when the clock is (Fog), instead of fixed at the screen's centre | `8bdfa20d` |
+| Waterline, Fog | Waterline's clock raised (top 268 to 200) to clear the Keep watching row; Fog's digits start on the rows' left edge (68 px), measured from the visible digit, not the glyph's side bearing | `5225b810` |
+| Eight new scenes | See 7.2. Lossless photos, depth-placed clocks, full-colour decode for every scene photo (16-bit colour banded smooth skies) | `85881a7b` |
+| Clock typeface | Instrument Serif replaces Antonio on Home and the ambient clock. The face is scaled into the digit box each scene was placed for (digits 0.87 x size tall, baseline 0.9175 x size below top), so placements carry over to any face | `21172321` |
+| Readable at every time | Over the digits the cut-out fades out from 90% of their height up to 62%: scenery covers only their lower part. Before, some digit was 40 to 78% hidden at some time on 10 of the 11 scenes with a cut-out. The top shade now draws over clock and cut-out alike | `c87526e8` |
+| Backgrounds on or off | Home settings > Look and scenes > Backgrounds: one row per scene with its picture, name, part of day and On/Off. Stored as `scenes_off` (ids joined by commas; also a theme key). At least one stays on | `d4701080`, `ab676939` |
+
+### 7.2 The scenes
+
+`SceneView.SPECS` holds all 13. `top` and `size` are in px at 1920 wide.
+
+| Id | Name in settings | Part of day | top / size | Cut-out | Photo |
+|---|---|---|---|---|---|
+| `night` | Night | Night, 19 to 5 | 150 / 400 | yes | couch-tv original |
+| `golden` | Golden hour | Evening, 16 to 19 | 152 / 390 | yes | couch-tv original |
+| `water` | Waterline | Daytime, 9 to 16 | 200 / 420 | no | couch-tv original |
+| `fog` | Fog | Fog and mist | 172 / 470, left 68 | yes | couch-tv original |
+| `dawn` | Dawn | Morning, 5 to 9 | 230 / 400 | yes | couch-tv original |
+| `valley` | Misty valley | Fog and mist | 160 / 440 | yes | Magnific (Freepik) free image, "beautiful nature landscape with river mountains" |
+| `bridge` | Arch bridge | Daytime | 250 / 380 | mask present, clock sits clear of it inside the arch | Pexels, mdx014, 814499 |
+| `alpine` | Alpine lake | Daytime | 140 / 440 | yes | Pexels, willianjusten, 24604748 |
+| `ember` | Ember ridges | Morning | 190 / 400 | yes | Pexels, hailsajal, 35132323 |
+| `highland` | Highland valley | Daytime | 170 / 420 | yes | Pexels, maxmishin, 10026140 |
+| `lake` | Mountain lake | Daytime | 180 / 440 | yes | Pexels, jplenio, 1110656 |
+| `snow` | Snow ridge | Daytime | 170 / 440 | yes | Pexels, winter-visual, 30114691 |
+| `city` | City at dusk | Evening | 230 / 380 | yes | Pexels, dawn-lio, 4138542 |
+
+Licences: Pexels photos are free to use without attribution. The Magnific free licence asks for attribution when
+an image is published; fine on one's own TV, to be checked before this goes into a shared theme.
+
+**Picking a scene.** "Follows the time" (the default) picks one of the switched-on scenes for the current part of
+the day (`BY_TIME`), not the one shown last, and keeps it until the part changes; when none of that part's scenes
+is on, any switched-on scene. "Different each start" picks among the switched-on scenes. A pinned scene that is
+switched off falls back to following the time.
+
+### 7.3 Files per scene (`launcher/app/src/main/assets/scenes/`)
+
+| Kind | Original five | New eight |
+|---|---|---|
+| Photo, 1920x1080 | `<id>.jpg` | `<id>.webp`, lossless (1.5 to 3 MB each) |
+| Blurred copy that fills the digits | `<id>-glass.jpg` | `<id>-glass.jpg` (blur 16 px at 1920, brightness 1.3, saturation 1.2: the recipe fitted from the originals) |
+| Scenery in front of the digits | `<id>-fg.webp` (a cut-out picture) | `<id>-mask.png` (alpha only); the cut-out is the photo's own pixels through it, made at load (`throughMask`) |
+| Picture for the Backgrounds list | `thumbs/<id>.jpg`, 192x108 | same |
+
+### 7.4 How a new scene was made
+
+1. Scale the photo to 1920 wide (Lanczos), keeping its height for now.
+2. Depth map with Depth Anything V2 Small (1 = near).
+3. Search the 16:9 crop offset, clock size and height so that scenery nearer than a depth threshold covers about
+   a third of the digits, at their bottom, leaves their top clear, and the visible digits end above the Keep
+   watching heading (about y 585).
+4. Refine the mask along the depth edge with GrabCut, drop specks, fill holes, feather 0.8 px.
+5. Encode: photo `cwebp -lossless -z 9`, glass JPEG q90, mask as an alpha-only PNG, thumbnail JPEG.
+6. Add a `scene(id, top, size, fillBright, shade)` line to `SPECS` (`BRIGHT_SKY` shade for pale skies), its id to
+   `BY_TIME`, and its name to `CouchSettingsActivity.SCENE_IDS/SCENE_NAMES` and `strings.xml`.
+7. Check every 12-hour time for hidden digits, then screenshot on the emulator.
+
+The scripts for steps 1 to 4 and 7 were run from a temporary folder and are not in the repo.
+
+### 7.5 Costs and what is not verified
+
+- **APK size:** 2.7 MB before the new scenes, 20.9 MB now (lossless photos). Upstream's 576 KB gate was already
+  left behind by the couch-tv port; this fork cannot go back upstream as it is.
+- **Memory:** the photo now decodes at 32-bit colour, about 4 MB more than before while Home is showing; the
+  new cut-outs are built at load from photo and mask.
+- **Not measured on the TV:** load time of a lossless photo, frame times with the cut-out fade (one extra
+  off-screen layer inside the scene's own GPU layer, redrawn once a minute), memory. Phase 6 covers these.
+- **Not checked on screen:** the ambient clock in Instrument Serif (the emulator will not open it from adb).
+- **Still open from section 6:** phase 6 on the TV, redesign of reorder mode, app library and card prompt,
+  languages other than English.
+
+### 7.6 Looked at, not built
+
+- **Phone remote.** The TV answers on the Android TV remote service ports (6466, 6467), so the Google TV app
+  works as a Wi-Fi remote today. A remote of our own would be a web page plus a small always-on server speaking
+  that service (no ADB, no launcher change). A remote inside the launcher is not possible on Android 11 without
+  ADB: apps cannot press D-pad keys before Android 13. Put off by choice.
+- **Header on the left.** Kept centred: the date line is the clock's caption, and now moves with it.
+- **Before the TV work ends:** ADB over the network (port 5555) is still on; close it as `AGENTS.md` describes.
