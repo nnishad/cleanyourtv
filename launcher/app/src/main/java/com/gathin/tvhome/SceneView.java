@@ -105,6 +105,7 @@ final class SceneView extends View {
     private final Paint sheen = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint caption = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Rect dst = new Rect();
+    private final Rect digits = new Rect();
     private final Matrix glassMatrix = new Matrix();
     private Bitmap photo, glass, cutout;
     private BitmapShader glassShader;
@@ -351,7 +352,16 @@ final class SceneView extends View {
         String line = weather.isEmpty() ? date : date + "   ·   " + weather;
         caption.setTextSize(31 * s);
         caption.setShadowLayer(8 * s, 0, 2 * s, 0xB3000000);
-        c.drawText(line, getWidth() / 2f, 138 * s, caption);
+        float base = (spec.top - 12) * s;   // just above the digits, whatever height the scene puts them at
+        if (spec.left < 0) {
+            caption.setTextAlign(Paint.Align.CENTER);
+            c.drawText(line, getWidth() / 2f, base, caption);
+        } else {   // a clock set to one side: start the line where the digits visibly start
+            fill.setTextSize(spec.size * s);
+            fill.getTextBounds(time, 0, time.length(), digits);
+            caption.setTextAlign(Paint.Align.LEFT);
+            c.drawText(line, spec.left * s + digits.left, base, caption);
+        }
     }
 
     private void drawClock(Canvas c, int w, int h, float s) {
