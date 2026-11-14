@@ -196,6 +196,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private boolean lunar;
     private int lunarOffset;
     private TextView stats;
+    /** Bedroom TV patch: the weather line (Weather.java) and what it needs. Off: hidden, and no network use. */
+    private TextView weather;
+    private boolean weatherOn, weatherBusy;
+    private String weatherPlace = "", weatherLat = "", weatherLon = "";
+    private static final long WEATHER_REFRESH_MS = 30 * 60 * 1000L, WEATHER_RETRY_MS = 5 * 60 * 1000L;
+    private final Runnable weatherTick = this::refreshWeather;
     private List<RaceWeekend.Race> raceCalendar;
     private View racePanel;
     private TextView raceKicker, raceHeadline, raceSessions;
@@ -566,6 +572,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnWifi = findViewById(R.id.btnWifi);
         shamsiDate = findViewById(R.id.shamsiDate);
         stats = findViewById(R.id.stats);
+        weather = findViewById(R.id.weather);
+        weatherPlace = getString(R.string.weather_place).trim();
+        weatherLat = getString(R.string.latitude).trim();
+        weatherLon = getString(R.string.longitude).trim();
+        weatherOn = getResources().getBoolean(R.bool.show_weather) && !weatherPlace.isEmpty()
+                && !weatherLat.isEmpty() && !weatherLon.isEmpty();
         raceCalendar = cfg.raceCalendar;
         racePanel = findViewById(R.id.racePanel);
         raceKicker = findViewById(R.id.raceKicker);
@@ -1124,6 +1136,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             pillsShown = true;
         }
         if (showStats) startStats();
+        startWeather();
         if (gameDay != null) gameDay.start();
         sky.update();
         wallpaperPlayer.start();
@@ -1309,6 +1322,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         handler.removeCallbacks(openWhenOnline);
         startPending = null;   // leaving Home before the network came back: the boot's app stays closed
         stopStats();
+        handler.removeCallbacks(weatherTick);   // no network use while Home is not on screen
         if (gameDay != null) gameDay.stop();
         handler.removeCallbacks(turnTick);
         if (lamp != null) lamp.stop();
@@ -2230,6 +2244,39 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         glass.animate().cancel();
         if (animations && !reducedMotion) glass.animate().alpha(0f).setDuration(160).start();
         else glass.setAlpha(0f);
+    }
+
+    // ---- Bedroom TV patch: weather line under the clock (Weather.java) -----------------------------
+
+    /** Shows the saved reading at once, then fetches a new one when it is older than 30 minutes. */
+    private void startWeather() {
+        if (!weatherOn) return;
+        Weather.Reading r = Weather.cached(this);
+        showWeather(r);
+        handler.removeCallbacks(weatherTick);
+        long age = r == null ? Long.MAX_VALUE : Math.max(0, System.currentTimeMillis() - r.at);
+        handler.postDelayed(weatherTick, age >= WEATHER_REFRESH_MS ? 0 : WEATHER_REFRESH_MS - age);
+    }
+
+    private void refreshWeather() {
+        if (!weatherOn || weatherBusy) return;
+        weatherBusy = true;
+        final String lat = weatherLat, lon = weatherLon;
+        new Thread(() -> {
+            Weather.Reading r = Weather.fetch(getApplicationContext(), lat, lon);
+            handler.post(() -> {
+                weatherBusy = false;
+                if (r != null) showWeather(r);
+                handler.removeCallbacks(weatherTick);
+                if (!isFinishing()) handler.postDelayed(weatherTick, r != null ? WEATHER_REFRESH_MS : WEATHER_RETRY_MS);
+            });
+        }, "weather").start();
+    }
+
+    private void showWeather(Weather.Reading r) {
+        if (r == null || weather == null) return;
+        weather.setText(Weather.line(weatherPlace, r));
+        weather.setVisibility(View.VISIBLE);
     }
 
     // ---- optional system stats (config.xml show_stats) --------------------------------------------
@@ -3605,16 +3652,52 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         panel.setPivotY(0f);
         panel.setScaleY(0.92f);
         panel.setTranslationY(-8 * density);
-        popup.showAsDropDown(anchor, 0, (int) (10 * density), gravity);
+        // Bedroom TV patch: keep the window inside the screen margins (the pill row's 56dp right margin). A list
+        // wider than its pill used to run off the screen's right edge when it hung from the pill's left edge.
+        int xoff = 0;
+        int w = popup.getWidth();
+        if (w > 0) {
+            int[] at = new int[2];
+            anchor.getLocationOnScreen(at);
+            int margin = (int) (56 * density), screen = getResources().getDisplayMetrics().widthPixels;
+            if (gravity == Gravity.END) {
+                int left = at[0] + anchor.getWidth() - w;
+                if (left < margin) xoff = margin - left;
+            } else {
+                int right = at[0] + w;
+                if (right > screen - margin) xoff = (screen - margin) - right;
+            }
+        }
+        popup.showAsDropDown(anchor, xoff, (int) (6 * density), gravity);
+        dimBehind(popup, 0.40f);
         panel.animate().alpha(1f).scaleY(1f).translationY(0f).setDuration(reducedMotion ? Motion.REDUCED_MS : 220)
                 .setInterpolator(new android.view.animation.DecelerateInterpolator(1.6f)).start();
+    }
+
+    /**
+     * Bedroom TV patch: dims Home a little behind an open window, so a list taller than the room above the dock reads
+     * as a layer over Home, not a box colliding with the dock. One compositor flag, no per-frame cost.
+     */
+    private void dimBehind(PopupWindow popup, float amount) {
+        try {
+            View decor = popup.getContentView().getRootView();
+            ViewGroup.LayoutParams p = decor.getLayoutParams();
+            if (p instanceof android.view.WindowManager.LayoutParams) {
+                android.view.WindowManager.LayoutParams lp = (android.view.WindowManager.LayoutParams) p;
+                lp.flags |= android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND;
+                lp.dimAmount = amount;
+                ((android.view.WindowManager) getSystemService(WINDOW_SERVICE)).updateViewLayout(decor, lp);
+            }
+        } catch (Exception ignored) {
+            // No dim: the window still works.
+        }
     }
 
     private View addSeparator(LinearLayout rows) {
         View line = new View(this);
         line.setBackgroundColor(0x1FFFFFFF);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) density);
-        int m = (int) (6 * density), h = (int) (12 * density);
+        int m = (int) (3 * density), h = (int) (12 * density);
         lp.setMargins(h, m, h, m);
         rows.addView(line, lp);
         return line;

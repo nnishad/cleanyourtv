@@ -1,15 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Bedroom TV patch: the focused row is the home screen's focus slab in small: a translucent fill, a sheen across
+     the top and a crisp white rim. Its text stays white (row_text). -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:state_focused="true">
-        <shape android:shape="rectangle">
-            <solid android:color="#F5FFFFFF" />
-            <corners android:radius="13dp" />
-        </shape>
+        <layer-list>
+            <item>
+                <shape android:shape="rectangle">
+                    <gradient android:angle="270" android:startColor="#4DFFFFFF" android:endColor="#1FFFFFFF" />
+                    <corners android:radius="18dp" />
+                </shape>
+            </item>
+            <item android:height="26dp" android:gravity="top">
+                <shape android:shape="rectangle">
+                    <gradient android:angle="270" android:startColor="#40FFFFFF" android:endColor="#00FFFFFF" />
+                    <corners android:topLeftRadius="18dp" android:topRightRadius="18dp" />
+                </shape>
+            </item>
+            <item>
+                <shape android:shape="rectangle">
+                    <stroke android:width="1.5dp" android:color="#CCFFFFFF" />
+                    <corners android:radius="18dp" />
+                </shape>
+            </item>
+        </layer-list>
     </item>
     <item>
         <shape android:shape="rectangle">
             <solid android:color="#00000000" />
-            <corners android:radius="13dp" />
+            <corners android:radius="18dp" />
         </shape>
     </item>
 </selector>

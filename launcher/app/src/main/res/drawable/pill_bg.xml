@@ -1,10 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Bedroom TV patch: the focused pill is translucent glass like the home screen's focus highlight, not solid
+         white. A faint dark base keeps its white text readable over a bright picture. -->
     <item android:state_focused="true">
-        <shape android:shape="rectangle">
-            <solid android:color="#F5FFFFFF" />
-            <corners android:radius="21dp" />
-        </shape>
+        <layer-list>
+            <item>
+                <shape android:shape="rectangle">
+                    <solid android:color="#59101418" />
+                    <corners android:radius="21dp" />
+                </shape>
+            </item>
+            <item>
+                <shape android:shape="rectangle">
+                    <gradient android:angle="270" android:startColor="#70FFFFFF" android:endColor="#40FFFFFF" />
+                    <stroke android:width="1.5dp" android:color="#CCFFFFFF" />
+                    <corners android:radius="21dp" />
+                </shape>
+            </item>
+        </layer-list>
     </item>
     <!-- Reorder button while reorder mode is on (focus is on the tiles then). -->
     <item android:state_activated="true">

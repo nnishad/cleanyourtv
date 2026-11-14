@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="42dp"
+    android:layout_height="46dp"
     android:orientation="horizontal"
     android:gravity="center_vertical"
-    android:paddingStart="12dp"
-    android:paddingEnd="12dp"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
     android:background="@drawable/input_row_bg"
     android:focusable="true"
     android:clickable="true">
 
     <ImageView
         android:id="@+id/icon"
-        android:layout_width="20dp"
-        android:layout_height="20dp"
-        android:tint="@drawable/pill_text"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:tint="@drawable/row_text"
         android:duplicateParentState="true"
         android:contentDescription="@null" />
 
@@ -23,11 +23,14 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:layout_marginStart="10dp"
-        android:layout_marginEnd="12dp"
-        android:textColor="@drawable/pill_text"
+        android:layout_marginStart="14dp"
+        android:layout_marginEnd="14dp"
+        android:textColor="@drawable/row_text"
         android:duplicateParentState="true"
-        android:textSize="15sp"
+        android:textSize="17sp"
+        android:shadowColor="#80000000"
+        android:shadowDy="1"
+        android:shadowRadius="4"
         android:fontFamily="@string/font_medium"
         android:singleLine="true" />
 
@@ -42,9 +45,9 @@
         android:id="@+id/status"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textColor="@drawable/pill_text_dim"
+        android:textColor="@drawable/row_text_dim"
         android:duplicateParentState="true"
-        android:textSize="11sp"
+        android:textSize="12sp"
         android:fontFamily="@string/font_body"
         android:letterSpacing="0.04" />
 </LinearLayout>
