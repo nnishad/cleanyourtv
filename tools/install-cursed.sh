@@ -4,8 +4,12 @@
 # (launcher/build-and-install.sh keeps its Home safety checks); this one only runs them in order and stops, before
 # the TV is touched, when something the later steps need is missing.
 #
-# Usage: tools/install-cursed.sh <tv ip> [--weather "Place,latitude,longitude"] [--no-build]
-#        TV_HOST=<tv ip> tools/install-cursed.sh
+# Usage: tools/install-cursed.sh [<tv ip>] [--weather "Place,latitude,longitude"] [--no-build] [--yes]
+#        tools/install-cursed.sh --find         only list the TVs on this Wi-Fi
+#   With no address it looks for TVs on this Wi-Fi (devices with network debugging switched on), lists them, and asks
+#   which one is yours. Before it changes anything it shows what the TV is and asks once more; --yes skips that
+#   question (a script or an assistant passes it after the person has said yes).
+#   --subnet    the network to search when it is not the usual /24 around this computer, e.g. 192.168.1.0/24
 #   --weather   show "23° Clear" beside the date, for that place (one small request to Open-Meteo every 30 minutes
 #               while Home is on screen). Without it the launcher makes no network request at all.
 #               Example: --weather "Vilnius,54.69,25.28". It edits launcher/app/src/main/res/values/config.xml.
@@ -16,25 +20,126 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-WEATHER=""; NO_BUILD=0; TV="${TV_HOST:-}"
+WEATHER=""; NO_BUILD=0; TV="${TV_HOST:-}"; YES=0; FIND=0; SUBNET=""
 while [ $# -gt 0 ]; do
   case "$1" in
+    --yes|-y) YES=1; shift ;;
+    --find) FIND=1; shift ;;
+    --subnet) SUBNET="${2:-}"; [ -n "$SUBNET" ] || { echo "ERROR: --subnet needs a network like 192.168.1.0/24." >&2; exit 2; }; shift 2 ;;
     --weather) WEATHER="${2:-}"; [ -n "$WEATHER" ] || { echo "ERROR: --weather needs \"Place,latitude,longitude\"." >&2; exit 2; }; shift 2 ;;
     --no-build) NO_BUILD=1; shift ;;
-    -h|--help) sed -n 2,16p "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n 2,24p "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     -*) echo "ERROR: unknown option $1 (see --help)." >&2; exit 2 ;;
     *) TV="$1"; shift ;;
   esac
 done
+command -v python3 >/dev/null || { echo "ERROR: Python 3 is not installed (https://www.python.org/downloads/)." >&2; exit 1; }
+step() { printf '\n==> %s\n' "$*"; }
+INTERACTIVE=0; [ -t 0 ] && INTERACTIVE=1
+
+# Devices on this network that answer on the ports a TV opens. One line each: "ready|ip|name" when network ADB (5555,
+# which this installer needs) is open, "off|ip|name" for a TV that answers but has debugging switched off. Only TCP
+# connections to three ports are tried, nothing is sent to what answers.
+discover() {
+  python3 - "$SUBNET" <<'PY'
+import errno, ipaddress, socket, sys
+from concurrent.futures import ThreadPoolExecutor
+ADB, TV_PORTS = 5555, (6466, 8009)    # 6466 Android TV remote service, 8009 Chromecast
+arg = sys.argv[1]
+mine = None
+if arg:
+    net = ipaddress.ip_network(arg, strict=False)
+else:
+    u = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        u.connect(("10.255.255.255", 1))   # sends nothing; it only picks this computer's interface
+        mine = u.getsockname()[0]
+    finally:
+        u.close()
+    net = ipaddress.ip_network(mine + "/24", strict=False)
+hosts = [h for h in (list(net.hosts()) or [net.network_address]) if str(h) != mine]
+unreachable = [0]
+def tcp(host, port):
+    try:
+        with socket.create_connection((str(host), port), timeout=0.7):
+            return True
+    except OSError as e:
+        if e.errno in (errno.EHOSTUNREACH, errno.ENETUNREACH, errno.EACCES, errno.EPERM):
+            unreachable[0] += 1
+        return False
+def look(host):
+    return host, tcp(host, ADB), any(tcp(host, p) for p in TV_PORTS)
+def name(host):
+    try:
+        return socket.gethostbyaddr(str(host))[0]
+    except OSError:
+        return ""
+with ThreadPoolExecutor(max_workers=96) as pool:
+    results = list(pool.map(look, hosts))
+found = 0
+for host, adb, tv in results:
+    if adb or tv:
+        found += 1
+        print("%s|%s|%s" % ("ready" if adb else "off", host, name(host)))
+if not found and unreachable[0] > len(hosts):
+    print("blocked||", end="")
+    sys.exit(3)
+PY
+}
+
+if [ -z "$TV" ] || [ "$FIND" = 1 ]; then
+  echo "Looking for Android TVs on this Wi-Fi (a few seconds)..."
+  rc=0; FOUND="$(discover)" || rc=$?
+  if [ "$rc" = 3 ]; then
+    echo "Nothing could be reached at all. On a Mac, allow your terminal under System Settings > Privacy & Security >" >&2
+    echo "Local Network, reopen it and run this again; or give the TV's address yourself." >&2
+    exit 1
+  fi
+  READY="$(printf '%s\n' "$FOUND" | sed -n 's/^ready|//p')"
+  OFF="$(printf '%s\n' "$FOUND" | sed -n 's/^off|//p')"
+  NREADY=$(printf '%s' "$READY" | grep -c . || true)
+  show() { printf '%s\n' "$1" | awk -F'|' '{ n = NR ")"; printf "  %-3s %-16s %s\n", n, $1, $2 }'; }
+  if [ "$NREADY" -gt 0 ]; then
+    echo "Devices with network debugging switched on:"; show "$READY"
+  fi
+  if [ -n "$OFF" ]; then
+    echo "A TV answered here with debugging switched OFF (switch USB and Network debugging on in its Developer options):"
+    printf '%s\n' "$OFF" | awk -F'|' '{ printf "      %-16s %s\n", $1, $2 }'
+  fi
+  if [ "$NREADY" = 0 ]; then
+    echo "No TV with network debugging switched on was found. Switch USB debugging (and Network or Wireless debugging)" >&2
+    echo "on in the TV's Developer options and keep it on, then run this again; or give its address: tools/install-cursed.sh <ip>." >&2
+    exit 1
+  fi
+  [ "$FIND" = 1 ] && exit 0
+  if [ "$INTERACTIVE" != 1 ]; then
+    echo "Which one is the TV? Ask the person, then run: tools/install-cursed.sh <ip> --yes" >&2
+    exit 2
+  fi
+  DEFAULT=""; [ "$NREADY" = 1 ] && DEFAULT=1
+  while [ -z "$TV" ]; do
+    read -r -p "Which one is your TV? Number or address${DEFAULT:+ [$DEFAULT]}, q to quit: " PICK || exit 1
+    PICK="${PICK:-$DEFAULT}"
+    case "$PICK" in
+      q|Q) exit 0 ;;
+      ''|*[!0-9.]*) echo "A number from the list, or an address." >&2 ;;
+      *.*) TV="$PICK" ;;
+      *) TV="$(printf '%s\n' "$READY" | sed -n "${PICK}p" | cut -d'|' -f1)"; [ -n "$TV" ] || echo "No such number." >&2 ;;
+    esac
+  done
+fi
 if [ -z "$TV" ]; then
-  echo "ERROR: give the TV's IP address, e.g. tools/install-cursed.sh 192.168.1.50 (Settings > Network shows it)." >&2
+  echo "ERROR: no TV address (try tools/install-cursed.sh --find)." >&2
+  exit 2
+fi
+if [ "$YES" != 1 ] && [ "$INTERACTIVE" != 1 ]; then
+  echo "ERROR: this changes the TV's home screen, so it asks first and there is no one to ask here. After the person has" >&2
+  echo "said yes, run it again with --yes." >&2
   exit 2
 fi
 export TV_HOST="$TV"
-step() { printf '\n==> %s\n' "$*"; }
 
 step "1/5  The tools"
-command -v python3 >/dev/null || { echo "ERROR: Python 3 is not installed (https://www.python.org/downloads/)." >&2; exit 1; }
 if [ ! -x tools/venv/bin/python ]; then
   python3 -m venv tools/venv
   tools/venv/bin/pip install -q -r tools/requirements.txt
@@ -48,6 +153,14 @@ if ! "$PY" -I tools/tv.py --probe; then
   echo "is switched on in its Developer options, that you allowed this computer on the TV's screen, and that the" >&2
   echo "address is right. docs/TROUBLESHOOTING.md#connecting has the cases, including macOS's Local Network permission." >&2
   exit 1
+fi
+
+if [ "$YES" != 1 ]; then
+  echo
+  echo "That is the TV at $TV_HOST. The next steps make Cursed its home screen: they build and install the launcher and turn"
+  echo "off the TV's own launcher (nothing is uninstalled, and it is put back if the new one does not start)."
+  read -r -p "Go ahead? [y/N] " GO || exit 1
+  case "$GO" in y|Y|yes|YES) ;; *) echo "Nothing was changed."; exit 0 ;; esac
 fi
 
 step "3/5  Building the launcher"

@@ -32,7 +32,7 @@ About ten minutes the first time, one command. You need:
 
 On the TV: **Settings > Device Preferences > About**, press **Build** seven times (it says you are a developer), go
 back, open **Developer options** and turn on **USB debugging**, and **Network debugging** or **Wireless debugging** if
-there is such a switch. Note the TV's address under **Settings > Network** (like `192.168.1.50`).
+there is such a switch. Keep the TV on.
 
 A Chromecast with Google TV or a Google TV Streamer has Wireless debugging with a pairing code; the installer needs the
 classic port, so follow [Connecting](../../docs/TROUBLESHOOTING.md#connecting) once.
@@ -42,13 +42,15 @@ classic port, so follow [Connecting](../../docs/TROUBLESHOOTING.md#connecting) o
 ```bash
 git clone -b cursed https://github.com/nnishad/cleanyourtv
 cd cleanyourtv
-tools/install-cursed.sh 192.168.1.50        # your TV's address
+tools/install-cursed.sh
 ```
 
-When the TV asks **Allow USB debugging?**, choose Always allow. The installer then:
+It looks for TVs on your Wi-Fi (a few seconds), lists the ones with debugging switched on, and asks which is yours. When the
+TV asks **Allow USB debugging?**, choose Always allow. Then it shows the TV's model and Android version and asks
+**Go ahead?** once more: say `y`, and it:
 
 1. sets up the tools (a Python environment inside the folder, nothing system-wide);
-2. checks it can talk to the TV and prints its model and Android version;
+2. connects to the TV;
 3. builds the launcher (with your Android SDK, or in Docker if you have none; the first Docker build makes a 1.5 GB image and takes a few minutes, a few more on an M-series Mac);
 4. installs it and makes it the home screen, **turning off the TV's own launcher** (it stays installed, and nothing else
    is removed). It checks that the new launcher starts before the old one is touched, and puts the old one back if it
@@ -63,17 +65,23 @@ Switch USB and Network/Wireless debugging **off** again in Developer options: wh
 control the TV. Check from the computer:
 
 ```bash
-tools/venv/bin/python -I tools/adb-closed.py 192.168.1.50
+tools/venv/bin/python -I tools/adb-closed.py <your TV's address>
 ```
 
 ## Options
+
+**Address, search and questions.** If you know the TV's address (Settings > Network), skip the search:
+`tools/install-cursed.sh 192.168.1.50`. `tools/install-cursed.sh --find` only lists the TVs it can see. The search
+covers this computer's own network (the /24 around its address); for a bigger or different one, add
+`--subnet 192.168.1.0/24`. `--yes` skips the final question, for a script or an assistant that has already asked you.
+Run without a keyboard (no terminal to answer on) and without `--yes`, it refuses to change anything.
 
 **Weather** beside the date ("☽ 23° Clear"). Off by default, and the launcher makes no network request at all while it
 is off. To turn it on, say where you are once; the installer asks Open-Meteo (free, no account) every 30 minutes while
 Home is on screen:
 
 ```bash
-tools/install-cursed.sh 192.168.1.50 --weather "Vilnius,54.69,25.28"     # place, latitude, longitude
+tools/install-cursed.sh --weather "Vilnius,54.69,25.28"     # place, latitude, longitude
 ```
 
 This edits `launcher/app/src/main/res/values/config.xml` in your copy of the repository. It is also a switch in Home
@@ -83,7 +91,7 @@ settings > Weather.
 The installer has already given the launcher permission to read that list (and only read it).
 
 **Building on a computer that has the Android SDK but you would rather use Docker**, or the other way round:
-`BUILD=docker tools/install-cursed.sh ...` or `BUILD=native ...`. `--no-build` installs the APK you built last time.
+`BUILD=docker tools/install-cursed.sh` or `BUILD=native ...`. `--no-build` installs the APK you built last time.
 
 ## Using it
 
@@ -97,7 +105,7 @@ The installer has already given the launcher permission to read that list (and o
 
 ```bash
 git pull
-tools/install-cursed.sh 192.168.1.50
+tools/install-cursed.sh
 ```
 
 Your apps and their order are kept. If the update changed the theme file, the choices you made in Home settings start again from the theme.
@@ -117,10 +125,12 @@ original. [docs/restore.md](../../docs/restore.md) has the rest.
 
 | What you see | What to do |
 |---|---|
+| *No TV with network debugging switched on was found* | Switch USB debugging (and Network or Wireless debugging) on in the TV's Developer options, keep the TV on, and run it again. A TV that answers with debugging off is named in the output. On another network, add `--subnet`; or give the address. |
+| *Nothing could be reached at all* | On a Mac, allow your terminal under **System Settings > Privacy & Security > Local Network** and reopen it. |
 | *could not talk to the TV* | Is it on, is debugging on, did you press Allow on the TV, is the address right? On a Mac, allow your terminal under **System Settings > Privacy & Security > Local Network**, then reopen it. More in [Connecting](../../docs/TROUBLESHOOTING.md#connecting). |
 | No *Developer options* after pressing Build seven times, or USB debugging is greyed out | Some operator boxes lock it; nothing can reach the TV then. See [Troubleshooting](../../docs/TROUBLESHOOTING.md#connecting). |
 | *nothing to build with* | Install and start Docker Desktop, then run it again. |
-| *Unsupported class file major version* | Your JDK is too new for Gradle. Use Docker: `BUILD=docker tools/install-cursed.sh ...`. |
+| *Unsupported class file major version* | Your JDK is too new for Gradle. Use Docker: `BUILD=docker tools/install-cursed.sh`. |
 | *INSTALL_FAILED_OLDER_SDK* | The TV is older than Android 8. The launcher cannot run on it; nothing was changed. |
 | The screen is black or blank after a restart | Press Home. If it stays, use the `pm enable` line under **Undo**. |
 | Keep watching stays empty | Nothing has reported progress yet, or the permission was refused: Home settings > Home rows > Allow access to Watch Next. |
@@ -144,7 +154,7 @@ main [README](../../README.md); the two work together.
 An Android TV 12 emulator at 1920x1080, where the screenshot and the installer were tested. An earlier build of this
 branch ran on an Android TV 11 set with 2 GB of RAM. This build has not been run on a real TV yet, and not measured on
 any: the cross-fades are full-screen blends, which a slow graphics chip may not do smoothly. On a 1 GB set the photos
-may be too heavy. The installer was run against that emulator on a Mac, with weather on; it was not tried on Linux, Windows (WSL) or a Docker build.
+may be too heavy. The installer, its search for TVs and its questions were run against that emulator on a Mac (the search found a device on this computer's loopback, not a real TV: the real one was off). They were not tried on Linux, Windows (WSL), a Docker build or a real TV.
 
 ## Credits
 
