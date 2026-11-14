@@ -112,16 +112,27 @@ tools/install-cursed.sh
 
 Your apps and their order are kept. If the update changed the theme file, the choices you made in Home settings start again from the theme.
 
-## Undo
+## Undo, and what keeps it safe
 
 ```bash
-tools/theme.sh --reset                                                     # removes the theme, keeps the launcher
-tools/venv/bin/python -I tools/tv.py 'pm enable --user 0 <the TV's own launcher>'
+tools/install-cursed.sh 192.168.1.50 --rollback      # your TV's address; asks once, --yes skips that
 ```
 
-The installer prints the exact second line at the end (usually `com.google.android.tvlauncher` or
-`com.google.android.apps.tv.launcherx`). Then open **Home settings > About > Default home screen** and pick the
-original. [docs/restore.md](../../docs/restore.md) has the rest.
+That takes the theme off, turns the TV's own launcher back on and makes it Home again, and removes the Cursed launcher if
+it was not on the TV before. It checks that Home really went back before it removes anything, and if the TV's own
+launcher does not take Home, it leaves the Cursed launcher in place and says so, so the TV is never left without a home screen.
+To take off only the theme: `tools/theme.sh --reset`.
+
+Three things are written down **before** the installer changes anything:
+
+| What | Where | Holds |
+|---|---|---|
+| The TV's original state | `~/.cleanyourtv/cursed-<address>.txt` on your computer | Which launcher owned Home, which stock launchers were on, whether the Cursed launcher was installed. A second run keeps the first record, so running the installer again never overwrites how the TV was. If the TV does not answer when it is read, nothing is changed. Not in git: it holds device details. |
+| A checkpoint of the files | a git tag `cursed-before-install-<date>` in your clone | `git reset --hard <tag>` puts the repository back as it was, which is what to use if an assistant (or you) edited files in it. It does not include uncommitted changes, so commit them first. |
+| An automatic handover check | inside `launcher/build-and-install.sh` | The new launcher is started before the old one is turned off, and if Home does not end up on it, the old one is put back at once; if that cannot finish, the commands that do are saved in a file in your home folder. |
+
+Debloating with the main README's tools has its own record (`~/.cleanyourtv/`, written before the first change) and its own
+undo: `tools/restore.sh`. [docs/restore.md](../../docs/restore.md) has the rest.
 
 ## If something goes wrong
 
@@ -134,7 +145,7 @@ original. [docs/restore.md](../../docs/restore.md) has the rest.
 | *nothing to build with* | Install and start Docker Desktop, then run it again. |
 | *Unsupported class file major version* | Your JDK is too new for Gradle. Use Docker: `BUILD=docker tools/install-cursed.sh`. |
 | *INSTALL_FAILED_OLDER_SDK* | The TV is older than Android 8. The launcher cannot run on it; nothing was changed. |
-| The screen is black or blank after a restart | Press Home. If it stays, use the `pm enable` line under **Undo**. |
+| The screen is black or blank after a restart | Press Home. If it stays, run `tools/install-cursed.sh <address> --rollback`. |
 | Keep watching stays empty | Nothing has reported progress yet, or the permission was refused: Home settings > Home rows > Allow access to Watch Next. |
 
 ## How this differs from upstream CleanYourTV

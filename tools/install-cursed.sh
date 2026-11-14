@@ -9,6 +9,10 @@
 #   With no address it looks for TVs on this Wi-Fi (devices with network debugging switched on), lists them, and asks
 #   which one is yours. Before it changes anything it shows what the TV is and asks once more; --yes skips that
 #   question (a script or an assistant passes it after the person has said yes).
+#   --rollback  undo it on the TV: take the theme off, turn the TV's own launcher back on and make it Home again, and
+#               remove this launcher if it was not there before. It uses the record written just before the install
+#               (~/.cleanyourtv/cursed-<tv address>.txt: which launcher owned Home, which stock launchers were on, whether
+#               this one was installed), and leaves this launcher in place if the TV's own does not take Home back.
 #   --subnet    the network to search when it is not the usual /24 around this computer, e.g. 192.168.1.0/24
 #   --no-build  install the APK already built (launcher/app/build/outputs/apk/release/app-release.apk)
 # BUILD=docker or BUILD=native forces the way the launcher is built; by default a computer with the Android SDK builds
@@ -17,14 +21,15 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-NO_BUILD=0; TV="${TV_HOST:-}"; YES=0; FIND=0; SUBNET=""
+NO_BUILD=0; TV="${TV_HOST:-}"; YES=0; FIND=0; SUBNET=""; ROLLBACK=0
 while [ $# -gt 0 ]; do
   case "$1" in
+    --rollback) ROLLBACK=1; shift ;;
     --yes|-y) YES=1; shift ;;
     --find) FIND=1; shift ;;
     --subnet) SUBNET="${2:-}"; [ -n "$SUBNET" ] || { echo "ERROR: --subnet needs a network like 192.168.1.0/24." >&2; exit 2; }; shift 2 ;;
     --no-build) NO_BUILD=1; shift ;;
-    -h|--help) sed -n 2,22p "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n 2,26p "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     -*) echo "ERROR: unknown option $1 (see --help)." >&2; exit 2 ;;
     *) TV="$1"; shift ;;
   esac
@@ -135,6 +140,108 @@ if [ "$YES" != 1 ] && [ "$INTERACTIVE" != 1 ]; then
 fi
 export TV_HOST="$TV"
 
+# ---- what was there before: the record the rollback uses, and a checkpoint of the repository -----------------------------
+RECORD_DIR="${HOME:-$PWD}/.cleanyourtv"
+RECORD="$RECORD_DIR/cursed-$(printf '%s' "$TV_HOST" | tr -c 'A-Za-z0-9._-' '_').txt"
+KNOWN_STOCK="com.google.android.tvlauncher com.google.android.apps.tv.launcherx com.google.android.leanbacklauncher com.mitv.tvhome"
+HOME_Q='cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME'
+tvq() { "$PY" -I tools/tv.py "$1" 2>/dev/null | tr -d '\r' || true; }
+
+# Writes what the TV looks like now, before anything is changed, unless an earlier install already left the TV's original
+# state on record (a second run would only record the first run's result). No answer from the TV, no change: it stops.
+save_record() {
+  mkdir -p "$RECORD_DIR"
+  local home ours enabled stock k
+  home="$(tvq "$HOME_Q" | tail -n 1)"
+  if [ -z "$home" ]; then
+    echo "ERROR: the TV did not say which launcher owns Home, so there is nothing safe to go back to. Nothing was changed." >&2
+    return 1
+  fi
+  if [ -f "$RECORD" ]; then
+    case "$home" in
+      com.gathin.tvhome/*) echo "Keeping the record of the TV's original state: $RECORD"; return 0 ;;
+    esac
+    mv "$RECORD" "$RECORD.old"   # the TV is not on this launcher any more: that record is out of date
+  fi
+  ours=absent
+  if [ -n "$(tvq 'pm list packages com.gathin.tvhome' | grep -x 'package:com.gathin.tvhome' || true)" ]; then
+    ours=enabled
+    [ -n "$(tvq 'pm list packages -d com.gathin.tvhome' | grep -x 'package:com.gathin.tvhome' || true)" ] && ours=disabled
+  fi
+  enabled="$(tvq 'pm list packages -e')"
+  stock=""
+  for k in $KNOWN_STOCK; do
+    printf '%s\n' "$enabled" | grep -qx "package:$k" && stock="$stock $k"
+  done
+  {
+    echo "# cleanyourtv: the state of the TV at $TV_HOST before the Cursed install, written $(date '+%Y-%m-%d %H:%M:%S')"
+    echo "# Undo with: tools/install-cursed.sh $TV_HOST --rollback"
+    echo "home=$home"
+    echo "launcher_before=$ours"
+    echo "stock_enabled_before=${stock# }"
+  } > "$RECORD"
+  echo "Recorded the TV's current state in $RECORD (Home: ${home%%/*})."
+}
+
+# A lightweight git tag on the commit the files are at now, so that anything changed in the repository afterwards (by this
+# script, or by an assistant working in it) can be put back with: git reset --hard <tag>. The TV's own state is not in
+# git, and must not be (it holds serial numbers and device names); that is what the record above is for.
+checkpoint_repo() {
+  git rev-parse --git-dir >/dev/null 2>&1 && git rev-parse -q --verify HEAD >/dev/null 2>&1 || return 0
+  local tag="cursed-before-install-$(date +%Y%m%d-%H%M%S)" have
+  have="$(git tag --points-at HEAD -l 'cursed-before-install-*' 2>/dev/null | head -n 1)"
+  if [ -n "$have" ]; then
+    echo "Repository checkpoint: git tag $have is on this commit already (git reset --hard $have puts the files back)."
+  elif git tag "$tag" HEAD 2>/dev/null; then
+    echo "Repository checkpoint: git tag $tag (git reset --hard $tag puts the files back as they are now)."
+    [ -z "$(git status --porcelain 2>/dev/null)" ] || echo "Note: there are uncommitted changes in this folder; the tag does not include them. Commit them first if they matter."
+  fi
+}
+
+rollback_tv() {
+  if [ ! -f "$RECORD" ]; then
+    echo "ERROR: no record of this TV's original state at $RECORD, so there is nothing to roll back to." >&2
+    echo "By hand: tools/theme.sh --reset, then tools/venv/bin/python -I tools/tv.py 'pm enable --user 0 <the TV's own launcher>'," >&2
+    echo "then Home settings > About > Default home screen. docs/restore.md has the rest." >&2
+    return 1
+  fi
+  local home ours stock was_home k out now
+  home="$(sed -n 's/^home=//p' "$RECORD")"; ours="$(sed -n 's/^launcher_before=//p' "$RECORD")"
+  stock="$(sed -n 's/^stock_enabled_before=//p' "$RECORD")"; was_home="${home%%/*}"
+  echo
+  echo "Before the install the TV's Home was ${was_home:-unknown}; this puts that back, takes the Cursed theme off, and"
+  [ "$ours" = absent ] && echo "removes the Cursed launcher (it was not installed before)." || echo "leaves the Cursed launcher installed (it was there before)."
+  if [ "$YES" != 1 ]; then
+    read -r -p "Roll back? [y/N] " GO || return 1
+    case "$GO" in y|Y|yes|YES) ;; *) echo "Nothing was changed."; return 0 ;; esac
+  fi
+  step "Rolling back"
+  tools/theme.sh --reset || echo "(the theme could not be reset; going on)" >&2
+  for k in $stock; do
+    tvq "pm enable --user 0 $k" >/dev/null || true
+  done
+  case "$was_home" in
+    ''|android|com.gathin.tvhome) tvq 'pm clear-package-preferred-activities com.gathin.tvhome' >/dev/null || true ;;
+    *) tvq "pm enable --user 0 $was_home" >/dev/null || true
+       tvq "cmd package set-home-activity --user 0 \$(cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME $was_home | tail -n 1)" >/dev/null || true ;;
+  esac
+  now="$(tvq "$HOME_Q" | tail -n 1)"
+  case "$now" in
+    '') echo "ERROR: the TV stopped answering, so the outcome is unknown. The Cursed launcher was left installed. Run this again once it answers." >&2; return 1 ;;
+    com.gathin.tvhome/*)
+      echo "ERROR: Home still resolves to the Cursed launcher ($now), so it was left installed and nothing else was removed." >&2
+      echo "The TV's own launcher may be disabled or missing: $PY -I tools/tv.py 'pm enable --user 0 <its package>'." >&2
+      return 1 ;;
+  esac
+  echo "Home is back on ${now%%/*}."
+  if [ "$ours" = absent ]; then
+    out="$(tvq 'pm uninstall --user 0 com.gathin.tvhome' | tail -n 1)"
+    echo "Removing the Cursed launcher: ${out:-no answer}"
+  fi
+  mv "$RECORD" "$RECORD.done" 2>/dev/null || true
+  echo "Rolled back. The record is kept as $RECORD.done."
+}
+
 step "1/5  The tools"
 if [ ! -x tools/venv/bin/python ]; then
   python3 -m venv tools/venv
@@ -151,6 +258,11 @@ if ! "$PY" -I tools/tv.py --probe; then
   exit 1
 fi
 
+if [ "$ROLLBACK" = 1 ]; then
+  rollback_tv
+  exit $?
+fi
+
 if [ "$YES" != 1 ]; then
   echo
   echo "That is the TV at $TV_HOST. The next steps make Cursed its home screen: they build and install the launcher and turn"
@@ -158,6 +270,8 @@ if [ "$YES" != 1 ]; then
   read -r -p "Go ahead? [y/N] " GO || exit 1
   case "$GO" in y|Y|yes|YES) ;; *) echo "Nothing was changed."; exit 0 ;; esac
 fi
+
+checkpoint_repo
 
 step "3/5  Building the launcher"
 APK=launcher/app/build/outputs/apk/release/app-release.apk
@@ -184,6 +298,7 @@ else
 fi
 
 step "4/5  Installing it and making it Home"
+save_record || exit 1
 LOG="$(mktemp)"
 trap 'rm -f "$LOG"' EXIT
 # The upload prints one "chunk n/567" per piece on a single line; show it as one word.
@@ -207,7 +322,9 @@ Before you leave it: switch USB and Network/Wireless debugging off in the TV's D
 on your Wi-Fi can control the TV. Then check from here:  $PY -I tools/adb-closed.py $TV_HOST
 
 To go back:
-  tools/theme.sh --reset                                   (removes the theme, keeps the launcher)
+  tools/install-cursed.sh $TV_HOST --rollback              (the theme off, the TV's own launcher back as Home; it uses the
+                                                            record of how the TV was: $RECORD)
+  tools/theme.sh --reset                                   (only the theme off, the launcher stays)
 EOF
 if [ -n "$STOCK" ] && [ "$STOCK" != none ]; then
   cat <<EOF
