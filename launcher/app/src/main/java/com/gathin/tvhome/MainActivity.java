@@ -206,6 +206,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private SceneView sceneView;
     /** Couch-tv port (Config.watchRow): the Keep watching row above the dock; null when the theme does not ask for it. */
     private KeepWatching keepWatching;
+    /** Couch-tv port (Config.hideRowsIdleSeconds): after this long untouched the rows and buttons fade out, leaving the
+     *  scene and its clock; any key brings them back and is not passed on. 0 is off. */
+    private long hideRowsMs;
+    private boolean rowsHidden;
+    private int swallowKey;
+    private View rowsWrap, topButtonsView;
+    private final Runnable hideRows = this::hideRowsNow;
     private List<RaceWeekend.Race> raceCalendar;
     private View racePanel;
     private TextView raceKicker, raceHeadline, raceSessions;
@@ -513,6 +520,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // the theme's background, so launch looks the same.
         getWindow().setBackgroundDrawable(null);
         wallpaperPlayer = new WallpaperPlayer(this, root, cfg);
+        hideRowsMs = cfg.hideRowsIdleSeconds * 1000L;
+        rowsWrap = findViewById(R.id.rowsWrap);
+        topButtonsView = findViewById(R.id.topButtons);
         if (cfg.scenes) {
             // Behind everything; the scene draws its own clock and date, so the header's are hidden (kept in
             // the layout, as the weather line and the pills are placed against it).
@@ -1140,6 +1150,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             return;
         }
         restartIdleClock();
+        armHideRows();
         if (sceneView != null) {
             sceneView.ensureLoaded();   // dropped by onTrimMemory
             sceneView.refresh();
@@ -1340,6 +1351,32 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         restartIdleClock();
     }
 
+    private void hideRowsNow() {
+        if (!resumed || reordering || openPopup != null || appLibrary != null || cardPrompt != null) {
+            armHideRows();   // something is open: look again later
+            return;
+        }
+        rowsHidden = true;
+        hideGlass();
+        rowsWrap.animate().alpha(0f).setDuration(500).start();
+        topButtonsView.animate().alpha(0f).setDuration(500).start();
+    }
+
+    private void armHideRows() {
+        root.removeCallbacks(hideRows);
+        if (hideRowsMs > 0 && resumed) root.postDelayed(hideRows, hideRowsMs);
+    }
+
+    private void showRows() {
+        rowsHidden = false;
+        rowsWrap.animate().alpha(1f).setDuration(150).start();
+        topButtonsView.animate().alpha(1f).setDuration(150).start();
+        View focused = getCurrentFocus();
+        int tile = focusedTilePosition();
+        if (focused != null && tile >= 0) onTileFocused(tile, focused);   // the dock's highlight comes back with it
+        armHideRows();
+    }
+
     private void restartIdleClock() {
         root.removeCallbacks(showIdleClock);
         if (resumed && idleClockMs > 0) root.postDelayed(showIdleClock, idleClockMs);
@@ -1354,6 +1391,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         RemoteKeys.release(this);
         cancelHoldOk();
         root.removeCallbacks(showIdleClock);
+        root.removeCallbacks(hideRows);
+        if (rowsHidden) {   // leaving Home: it comes back with its rows
+            rowsHidden = false;
+            rowsWrap.setAlpha(1f);
+            topButtonsView.setAlpha(1f);
+        }
         endReorder();   // Home or another app while reordering keeps the order so far
         wallpaperPlayer.stop();
         if (sceneView != null) sceneView.pause();
@@ -1478,6 +1521,18 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (resumed && event.getKeyCode() >= 1000 && RemoteKeys.handle(this, event, homeAppKeys.get(event.getKeyCode()),
                 homeHoldAppKeys.get(event.getKeyCode()))) return true;
         if (handleSettingsKey(event)) return true;
+        if (hideRowsMs > 0 && event.getKeyCode() < 1000) {
+            if (swallowKey == event.getKeyCode() && event.getAction() == KeyEvent.ACTION_UP) {
+                swallowKey = 0;
+                return true;
+            }
+            if (rowsHidden) {   // the first press only wakes the rows; it must not open what is focused
+                swallowKey = event.getKeyCode();
+                if (event.getAction() == KeyEvent.ACTION_DOWN) showRows();
+                return true;
+            }
+            armHideRows();
+        }
         if (holdOk(event)) return true;
         if (tileMenuEnabled && !reordering && openPopup == null && cardPrompt == null
                 && event.getKeyCode() == KeyEvent.KEYCODE_MENU) {
