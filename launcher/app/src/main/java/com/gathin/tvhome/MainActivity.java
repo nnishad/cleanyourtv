@@ -204,6 +204,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private final Runnable weatherTick = this::refreshWeather;
     /** Couch-tv port (Config.scenes): the scene behind Home, drawn natively; null when the theme does not ask for it. */
     private SceneView sceneView;
+    /** Couch-tv port (Config.watchRow): the Keep watching row above the dock; null when the theme does not ask for it. */
+    private KeepWatching keepWatching;
     private List<RaceWeekend.Race> raceCalendar;
     private View racePanel;
     private TextView raceKicker, raceHeadline, raceSessions;
@@ -628,6 +630,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         libraryExcludedApps = new HashSet<>(cfg.libraryExcludedApps);
 
         grid = findViewById(R.id.grid);
+        if (cfg.watchRow) {
+            keepWatching = new KeepWatching(this, findViewById(R.id.watchBlock), findViewById(R.id.watchList),
+                    new KeepWatching.Listener() {
+                        @Override
+                        public void onCardFocused() {
+                            hideGlass();   // the dock's highlight belongs to a tile, not a card
+                        }
+
+                    });
+        }
         rtlAppGrid = getResources().getBoolean(R.bool.rtl_app_grid);
         // Mirror only the app grid; the header and other locales keep their own layouts.
         // single_row: one span laid out sideways, so the same adapter, glass and dock band serve a scrolling row.
@@ -738,6 +750,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // A single row never shows the names under its tiles (the title above the row names the app), so the
             // 7dp gap and 22dp label item_app.xml keeps for them would only lift the row: sit it that much lower.
             if (singleRow && !cfg.alwaysShowNames) want += (int) (29 * density);
+            // Scenes look: the dock sits lower, as in couch-tv, leaving the scene (and the Keep watching row) the room.
+            if (cfg.scenes && MainActivity.this.dockRow && !singleRow) want += (int) (26 * density);
             if (grid.getPaddingTop() != want) {
                 grid.setPadding(grid.getPaddingLeft(), want, grid.getPaddingRight(), grid.getPaddingBottom());
                 // A vertical grid parks the dock on the new padding line by scrolling (onTileFocused); a sideways
@@ -758,10 +772,20 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                     grid.requestLayout();
                 });
             }
+            if (keepWatching != null) keepWatching.place(want);
             // Cold start or column count > 4: the first focus can run before the grid has its final width or
             // padding, leaving the glass at the XML design size until a key is pressed.
             grid.post(this::refitGlass);
         });
+
+        if (keepWatching != null) {
+            grid.addOnScrollListener(new RecyclerView.OnScrollListener() {
+                @Override
+                public void onScrolled(@NonNull RecyclerView rv, int dx, int dy) {
+                    keepWatching.scrolled(rv.canScrollVertically(-1) ? rv.computeVerticalScrollOffset() : 0);
+                }
+            });
+        }
 
         // Keep the glass glued to its tile while the grid scrolls.
         grid.addOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -916,7 +940,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
             if (keyCode == KeyEvent.KEYCODE_DPAD_UP) return true;
             if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
-                // Back to the dock tile Up came from, not wherever the focus finder lands.
+                // The Keep watching row first when it is showing; else back to the dock tile Up came from, not
+                // wherever the focus finder lands.
+                if (keepWatching != null && keepWatching.focusFirst()) return true;
                 focusTile(singleRow ? lastFocused : lastFocused % COLUMNS);
                 return true;
             }
@@ -1118,6 +1144,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             sceneView.ensureLoaded();   // dropped by onTrimMemory
             sceneView.refresh();
         }
+        if (keepWatching != null) keepWatching.refresh();
         promptsPaused = false;
         if (grid.getAdapter() == null) grid.setAdapter(adapter);   // dropped by onTrimMemory
         switch (tileRefresh.onResume(packagesChangedSinceRebuild())) {
@@ -1379,6 +1406,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         heroArtKey = null;
         wallpaperPlayer.releaseForMemoryPressure();
         if (sceneView != null) sceneView.release();
+        if (keepWatching != null) keepWatching.release();
         tileRefresh.invalidate();
     }
 

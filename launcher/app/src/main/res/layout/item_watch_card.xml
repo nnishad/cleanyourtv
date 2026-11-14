@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="290dp"
+    android:layout_height="82dp"
+    android:layout_marginEnd="10dp"
+    android:background="@drawable/watch_card_bg"
+    android:focusable="true"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:padding="7dp">
+
+    <ImageView
+        android:id="@+id/watchThumb"
+        android:layout_width="116dp"
+        android:layout_height="65dp"
+        android:background="#33000000"
+        android:importantForAccessibility="no"
+        android:scaleType="centerCrop" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/watchApp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/outfit_medium"
+            android:letterSpacing="0.1"
+            android:singleLine="true"
+            android:textAllCaps="true"
+            android:textColor="#99FFFFFF"
+            android:textSize="8sp" />
+
+        <TextView
+            android:id="@+id/watchTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:fontFamily="@font/outfit_medium"
+            android:singleLine="true"
+            android:textColor="#FFFFFFFF"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/watchSub"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:fontFamily="@font/outfit_medium"
+            android:singleLine="true"
+            android:textColor="#B3FFFFFF"
+            android:textSize="10sp" />
+
+        <ProgressBar
+            android:id="@+id/watchProgress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="3dp"
+            android:layout_marginTop="5dp"
+            android:max="100"
+            android:progressTint="#FFFFFFFF"
+            android:progressBackgroundTint="#33FFFFFF"
+            android:progressBackgroundTintMode="src_in" />
+    </LinearLayout>
+</LinearLayout>

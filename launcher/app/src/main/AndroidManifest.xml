@@ -9,6 +9,9 @@
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <!-- Couch-tv port, watch_row: Android's Watch Next list (what Netflix, Hotstar and others say you are part way
+         through), read only. Not granted on install: pm grant com.gathin.tvhome android.permission.READ_TV_LISTINGS -->
+    <uses-permission android:name="android.permission.READ_TV_LISTINGS" />
     <!-- Bedroom TV patch: only for the weather line under the clock (Weather.java), one small HTTPS request to
          Open-Meteo every 30 minutes while Home is on screen. Not part of the upstream launcher. -->
     <uses-permission android:name="android.permission.INTERNET" />
