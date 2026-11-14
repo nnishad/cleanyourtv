@@ -2,7 +2,7 @@
 
 Use this if you would rather have an assistant (Claude Code, Codex or similar, with shell access, on a computer on the same
 Wi-Fi as the TV) do the debloating and the install. Without an assistant, `tools/setup-cursed.sh` does the same job: see
-the [guide](README.md#debloat-too-without-an-assistant).
+the [guide](README.md#b-one-command-and-switch-off-what-the-tv-maker-runs).
 
 On the TV first: Settings > Device Preferences > About, press OK on **Build** seven times, back, Developer options, turn
 on **USB debugging** (and Network or Wireless debugging if offered). Keep the TV on.
