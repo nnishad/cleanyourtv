@@ -185,6 +185,16 @@
     <string name="hs_scene_lake">Mountain lake</string>
     <string name="hs_scene_snow">Snow ridge</string>
     <string name="hs_scene_city">City at dusk</string>
+    <string name="hs_backgrounds">Backgrounds</string>
+    <string name="hs_backgrounds_note">Which scenes Home may show</string>
+    <string name="hs_backgrounds_count">%1$d of %2$d on</string>
+    <string name="hs_hint_backgrounds">OK to switch on or off, Back for Look and scenes</string>
+    <string name="hs_backgrounds_keep_one">Keep at least one background on</string>
+    <string name="hs_part_morning">Morning, 5 to 9</string>
+    <string name="hs_part_day">Daytime, 9 to 4</string>
+    <string name="hs_part_evening">Evening, 4 to 7</string>
+    <string name="hs_part_night">Night, 7 to 5</string>
+    <string name="hs_part_fog">Fog and mist</string>
     <string name="hs_clock_tv">As the TV is set</string>
     <string name="hs_clock_12">12-hour</string>
     <string name="hs_clock_24">24-hour</string>

@@ -40,7 +40,9 @@ public final class CouchSettingsActivity extends Activity {
     private static final int[] HIDE_NAMES = {R.string.hs_idle_off, R.string.hs_30s, R.string.hs_1m, R.string.hs_2m, R.string.hs_5m};
     private static final int[] IDLE_MINUTES = {0, 5, 10, 15, 30};
     private static final int[] IDLE_NAMES = {R.string.hs_idle_off, R.string.hs_5m, R.string.hs_10m, R.string.hs_15m, R.string.hs_30m};
-    private static final String[] OWN_KEYS = {"scenes", "scene", "watch_row", "hide_rows_idle_seconds",
+    private static final int[] PART_NAMES = {R.string.hs_part_morning, R.string.hs_part_day, R.string.hs_part_evening,
+            R.string.hs_part_night, R.string.hs_part_fog};
+    private static final String[] OWN_KEYS = {"scenes", "scene", "scenes_off", "watch_row", "hide_rows_idle_seconds",
             "home_idle_clock_minutes", "show_weather", "hide_tile_names"};
 
     private SharedPreferences choices;
@@ -49,6 +51,9 @@ public final class CouchSettingsActivity extends Activity {
     private TextView paneTitle, crumb, hint;
     private float density;
     private int section;
+    /** The Backgrounds list is open (a level under Look and scenes); backgroundsRow is its row in that pane. */
+    private boolean inBackgrounds;
+    private int backgroundsRow;
 
     @Override
     protected void attachBaseContext(Context base) {
@@ -130,6 +135,12 @@ public final class CouchSettingsActivity extends Activity {
     /** Back inside a section returns to the sections; Back on the sections closes the sheet. */
     @Override
     public void onBackPressed() {
+        if (inBackgrounds) {
+            showSection(0);
+            View row = paneRows.getChildAt(backgroundsRow);
+            if (row != null) row.requestFocus();
+            return;
+        }
         if (section >= 0) {
             showSections(section);
             return;
@@ -141,6 +152,7 @@ public final class CouchSettingsActivity extends Activity {
 
     private void showSection(int index) {
         section = index;
+        inBackgrounds = false;
         paneTitle.setText(SECTIONS[index]);
         crumb.setText(R.string.hs_title);
         hint.setText(R.string.hs_hint_rows);
@@ -169,7 +181,8 @@ public final class CouchSettingsActivity extends Activity {
             showSections(0);
             return;
         }
-        showSection(section);
+        if (inBackgrounds) showBackgrounds();
+        else showSection(section);
         View row = paneRows.getChildAt(Math.max(0, Math.min(focusIndex, paneRows.getChildCount() - 1)));
         if (row != null) row.requestFocus();
     }
@@ -177,14 +190,71 @@ public final class CouchSettingsActivity extends Activity {
     private void lookPane() {
         toggle(R.string.hs_scenes, "scenes", config.scenes, getString(R.string.hs_scenes_note));
         if (config.scenes) {
+            // The Scene row offers following the time, a different one each start, and the scenes that are switched on.
+            java.util.List<String> ids = new java.util.ArrayList<>();
+            java.util.List<Integer> names = new java.util.ArrayList<>();
             int at = 0;
-            for (int i = 0; i < SCENE_IDS.length; i++) if (SCENE_IDS[i].equalsIgnoreCase(config.scene)) at = i;
-            cycle(R.string.hs_scene, null, SCENE_NAMES, at, v -> choices.edit().putString("scene", SCENE_IDS[v]).apply());
+            for (int i = 0; i < SCENE_IDS.length; i++) {
+                if (i >= 2 && config.scenesOff.contains(SCENE_IDS[i])) continue;
+                if (SCENE_IDS[i].equalsIgnoreCase(config.scene)) at = ids.size();
+                ids.add(SCENE_IDS[i]);
+                names.add(SCENE_NAMES[i]);
+            }
+            int[] nameRes = new int[names.size()];
+            for (int i = 0; i < nameRes.length; i++) nameRes[i] = names.get(i);
+            cycle(R.string.hs_scene, null, nameRes, at, v -> choices.edit().putString("scene", ids.get(v)).apply());
+            backgroundsRow = paneRows.getChildCount();
+            int on = SceneView.ids().length - countOff();
+            paneRows.addView(row(getString(R.string.hs_backgrounds), getString(R.string.hs_backgrounds_note),
+                    getString(R.string.hs_backgrounds_count, on, SceneView.ids().length), () -> {
+                        showBackgrounds();
+                        View first = firstFocusable();
+                        if (first != null) first.requestFocus();
+                    }));
         }
         toggleInverted(R.string.hs_app_names, "hide_tile_names", config.hideTileNames, getString(R.string.hs_app_names_note));
         int clock = 0;
         for (int i = 0; i < CLOCK_IDS.length; i++) if (CLOCK_IDS[i].equals(config.clockFormat)) clock = i;
         cycle(R.string.hs_clock, null, CLOCK_NAMES, clock, v -> choices.edit().putString(Config.CLOCK_FORMAT_KEY, CLOCK_IDS[v]).apply());
+    }
+
+    private int countOff() {
+        int n = 0;
+        for (String id : SceneView.ids()) if (config.scenesOff.contains(id)) n++;
+        return n;
+    }
+
+    /** One row per scene, on or off; the ones switched off are never shown. One always stays on. */
+    private void showBackgrounds() {
+        inBackgrounds = true;
+        paneTitle.setText(R.string.hs_backgrounds);
+        crumb.setText(SECTIONS[0]);
+        hint.setText(R.string.hs_hint_backgrounds);
+        paneRows.removeAllViews();
+        for (String id : SceneView.ids()) {
+            final int at = paneRows.getChildCount();
+            boolean isOn = !config.scenesOff.contains(id);
+            int part = SceneView.partOf(id);
+            paneRows.addView(row(getString(sceneName(id)), part >= 0 ? getString(PART_NAMES[part]) : null,
+                    getString(isOn ? R.string.on : R.string.off), () -> {
+                        java.util.Set<String> off = new java.util.LinkedHashSet<>(config.scenesOff);
+                        if (isOn && SceneView.ids().length - countOff() <= 1) {
+                            hint.setText(R.string.hs_backgrounds_keep_one);
+                            return;
+                        }
+                        if (isOn) off.add(id);
+                        else off.remove(id);
+                        choices.edit().putString("scenes_off", String.join(",", off)).apply();
+                        changed();
+                        config = Config.load(this);
+                        rebuild(at);
+                    }));
+        }
+    }
+
+    private static int sceneName(String id) {
+        for (int i = 0; i < SCENE_IDS.length; i++) if (SCENE_IDS[i].equals(id)) return SCENE_NAMES[i];
+        return R.string.hs_scene;
     }
 
     private void rowsPane() {

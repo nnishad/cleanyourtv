@@ -131,6 +131,8 @@ final class SceneView extends View {
     private Spec spec;
     /** The configured scene: an id, "random" for a different one each start, or empty to follow the time and weather. */
     private final String wanted;
+    /** Scenes switched off in Home settings: never picked. */
+    private final java.util.Set<String> off;
     /** Told the scene's accent colour once its photo is in (design/REVAMP-PLAN.md 3.1). */
     interface AccentListener {
         void onAccent(int argb);
@@ -180,8 +182,9 @@ final class SceneView extends View {
         // are drawn as paths each time. As a GPU layer it is drawn once per change and is one textured quad after that.
         setLayerType(LAYER_TYPE_HARDWARE, null);
         background = cfg.backgroundColor;
-        wanted = cfg.scene == null ? "" : cfg.scene;
-        spec = pick(context, wanted);
+        off = cfg.scenesOff;
+        wanted = cfg.scene == null || off.contains(cfg.scene) ? "" : cfg.scene;
+        spec = pick(context, wanted, off);
         time = date = "";
         is24 = ClockFormat.is24(context, cfg.clockFormat);
         Typeface serif = null, outfit = null;
@@ -230,8 +233,8 @@ final class SceneView extends View {
      * fog came down), that one comes in. A pinned or random scene stays.
      */
     void followTime() {
-        if (!wanted.isEmpty() || partOf(spec.id) == partNow(getContext())) return;
-        Spec now = byTime(getContext());
+        if (!wanted.isEmpty() || poolNow(getContext(), off).contains(spec.id)) return;
+        Spec now = byTime(getContext(), off);
         spec = now;
         applySpec();
         release();
@@ -246,20 +249,52 @@ final class SceneView extends View {
         return h >= 5 && h < 9 ? 0 : h >= 9 && h < 16 ? 1 : h >= 16 && h < 19 ? 2 : 3;
     }
 
-    private static int partOf(String id) {
+    /** Every scene id, in the order Home settings lists them. */
+    static String[] ids() {
+        String[] out = new String[SPECS.length];
+        for (int i = 0; i < SPECS.length; i++) out[i] = SPECS[i].id;
+        return out;
+    }
+
+    /** The part of the day a scene belongs to (an index into BY_TIME), or -1. */
+    static int partOf(String id) {
         for (int p = 0; p < BY_TIME.length; p++) for (String s : BY_TIME[p]) if (s.equals(id)) return p;
         return -1;
     }
 
+    /** The scenes switched on, in SPECS order; all of them when every one is off. */
+    private static java.util.List<String> enabled(java.util.Set<String> off) {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        for (Spec s : SPECS) if (!off.contains(s.id)) out.add(s.id);
+        if (out.isEmpty()) for (Spec s : SPECS) out.add(s.id);
+        return out;
+    }
+
+    /** The switched-on scenes for this part of the day; every switched-on scene when none of them is for now. */
+    private static java.util.List<String> poolNow(Context ctx, java.util.Set<String> off) {
+        java.util.List<String> on = enabled(off), out = new java.util.ArrayList<>();
+        for (String id : BY_TIME[partNow(ctx)]) if (on.contains(id)) out.add(id);
+        return out.isEmpty() ? on : out;
+    }
+
     /** One of the scenes for this part of the day, not the one shown last time when there is a choice. */
-    private static Spec byTime(Context ctx) {
-        String[] ids = BY_TIME[partNow(ctx)];
+    private static Spec byTime(Context ctx, java.util.Set<String> off) {
+        java.util.List<String> ids = poolNow(ctx, off);
         SharedPreferences prefs = ctx.getSharedPreferences("scene_state", Context.MODE_PRIVATE);
-        String last = prefs.getString("last_timed", "");
-        int next = new Random().nextInt(ids.length);
-        if (ids.length > 1 && ids[next].equals(last)) next = (next + 1) % ids.length;
-        prefs.edit().putString("last_timed", ids[next]).apply();
-        for (Spec s : SPECS) if (s.id.equals(ids[next])) return s;
+        String id = another(ids, prefs.getString("last_timed", ""));
+        prefs.edit().putString("last_timed", id).apply();
+        return spec(id);
+    }
+
+    /** A random one of ids, other than last when there is a choice. */
+    private static String another(java.util.List<String> ids, String last) {
+        int next = new Random().nextInt(ids.size());
+        if (ids.size() > 1 && ids.get(next).equals(last)) next = (next + 1) % ids.size();
+        return ids.get(next);
+    }
+
+    private static Spec spec(String id) {
+        for (Spec s : SPECS) if (s.id.equals(id)) return s;
         return SPECS[0];
     }
 
@@ -267,17 +302,13 @@ final class SceneView extends View {
      * The scene to show: the one config.json or Home settings pins ("scene": "fog"), one that follows the time and
      * weather (empty, the default), or "random": a new picture each start, never the one shown last time.
      */
-    private static Spec pick(Context ctx, String wanted) {
+    private static Spec pick(Context ctx, String wanted, java.util.Set<String> off) {
         for (Spec s : SPECS) if (s.id.equalsIgnoreCase(wanted)) return s;
-        if (!"random".equalsIgnoreCase(wanted)) return byTime(ctx);
+        if (!"random".equalsIgnoreCase(wanted)) return byTime(ctx, off);
         SharedPreferences prefs = ctx.getSharedPreferences("scene_state", Context.MODE_PRIVATE);
-        int last = prefs.getInt("last", -1);
-        Random random = new Random();
-        boolean again = last >= 0 && last < SPECS.length;
-        int next = random.nextInt(again ? SPECS.length - 1 : SPECS.length);
-        if (again && next >= last) next++;
-        prefs.edit().putInt("last", next).apply();
-        return SPECS[next];
+        String id = another(enabled(off), prefs.getString("last_random", ""));
+        prefs.edit().putString("last_random", id).apply();
+        return spec(id);
     }
 
     private static ColorMatrixColorFilter filter(float brightness, float saturation) {
