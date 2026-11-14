@@ -59,6 +59,27 @@ TV asks **Allow USB debugging?**, choose Always allow. Then it shows the TV's mo
 
 Press Home on the remote. That is it.
 
+### Debloat too, without an assistant
+
+`tools/install-cursed.sh` changes the home screen only. To also switch off what the TV maker runs that you do not
+need, run the same job with the debloat added, still one command:
+
+```bash
+tools/setup-cursed.sh                    # or: tools/setup-cursed.sh 192.168.1.50
+```
+
+It asks which TV, shows its model, and then asks what to switch off. It looks in `examples/` for the **tested list that
+names this TV's build** (by its model and firmware fingerprint) and offers it; a list is for one firmware, so it never
+guesses from a similar name. With no match, it offers only the voice, advertising and telemetry services this TV reports
+about itself (the audit of `tools/privacy.py`). Either way you **read the list** (`v` shows all of it, `e` edits it) and
+say yes. The launcher goes on first and the list is applied last, because some lists need the new launcher in place.
+Your own list works too: `--list my-list.txt` (one package name a line, `#` for comments).
+
+What it will not do: uninstall anything (everything is switched off, and can be switched back on), touch the packages
+Android needs to boot (`tools/disable.sh` refuses them), or change anything before you say yes. A TV with no tested list
+gets only the generic audit, which is far less than a tested list switches off; for a deeper clean there, use the
+[assistant prompt](AGENT-PROMPT.md) or the main README's "Doing it by hand".
+
 ### 3. Close the door
 
 Switch USB and Network/Wireless debugging **off** again in Developer options: while it is on, anyone on your Wi-Fi can
@@ -103,6 +124,11 @@ The installer has already given the launcher permission to read that list (and o
 - **Up from the dock** goes to Keep watching. After a minute of nothing the rows fade away and the picture takes over;
   any button brings them back.
 
+## With an AI assistant instead
+
+[AGENT-PROMPT.md](AGENT-PROMPT.md) is a prompt to paste into one (Claude Code, Codex, ...) that does the same job and
+sets its own rollback points: a git checkpoint of the files, and the records above for the TV.
+
 ## Update
 
 ```bash
@@ -118,8 +144,8 @@ Your apps and their order are kept. If the update changed the theme file, the ch
 tools/install-cursed.sh 192.168.1.50 --rollback      # your TV's address; asks once, --yes skips that
 ```
 
-That takes the theme off, turns the TV's own launcher back on and makes it Home again, and removes the Cursed launcher if
-it was not on the TV before. It checks that Home really went back before it removes anything, and if the TV's own
+That takes the theme off, switches back on whatever a `--debloat` list switched off, turns the TV's own launcher back on and
+makes it Home again, and removes the Cursed launcher if it was not on the TV before. It checks that Home really went back before it removes anything, and if the TV's own
 launcher does not take Home, it leaves the Cursed launcher in place and says so, so the TV is never left without a home screen.
 To take off only the theme: `tools/theme.sh --reset`.
 
@@ -129,10 +155,10 @@ Three things are written down **before** the installer changes anything:
 |---|---|---|
 | The TV's original state | `~/.cleanyourtv/cursed-<address>.txt` on your computer | Which launcher owned Home, which stock launchers were on, whether the Cursed launcher was installed. A second run keeps the first record, so running the installer again never overwrites how the TV was. If the TV does not answer when it is read, nothing is changed. Not in git: it holds device details. |
 | A checkpoint of the files | a git tag `cursed-before-install-<date>` in your clone | `git reset --hard <tag>` puts the repository back as it was, which is what to use if an assistant (or you) edited files in it. It does not include uncommitted changes, so commit them first. |
+| What a debloat switched off | `~/.cleanyourtv/recovery-<address>-<id>.json`, and a copy of the list in the same folder | Written by `tools/disable.sh` before its first change. `--rollback` replays it, or on its own: `tools/restore.sh <the list copy>`. |
 | An automatic handover check | inside `launcher/build-and-install.sh` | The new launcher is started before the old one is turned off, and if Home does not end up on it, the old one is put back at once; if that cannot finish, the commands that do are saved in a file in your home folder. |
 
-Debloating with the main README's tools has its own record (`~/.cleanyourtv/`, written before the first change) and its own
-undo: `tools/restore.sh`. [docs/restore.md](../../docs/restore.md) has the rest.
+[docs/restore.md](../../docs/restore.md) has the rest.
 
 ## If something goes wrong
 

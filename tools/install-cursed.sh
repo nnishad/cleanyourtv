@@ -4,11 +4,17 @@
 # (launcher/build-and-install.sh keeps its Home safety checks); this one only runs them in order and stops, before
 # the TV is touched, when something the later steps need is missing.
 #
-# Usage: tools/install-cursed.sh [<tv ip>] [--no-build] [--yes]
+# Usage: tools/install-cursed.sh [<tv ip>] [--debloat] [--list FILE] [--no-build] [--yes]
 #        tools/install-cursed.sh --find         only list the TVs on this Wi-Fi
 #   With no address it looks for TVs on this Wi-Fi (devices with network debugging switched on), lists them, and asks
 #   which one is yours. Before it changes anything it shows what the TV is and asks once more; --yes skips that
 #   question (a script or an assistant passes it after the person has said yes).
+#   --debloat   also switch off what the TV maker runs that you do not need, after the launcher is in. It looks for the
+#               tested list of examples/ that belongs to this TV (by its model and build) and shows it; with none, it
+#               offers only the voice, advertising and telemetry services this TV reports (tools/privacy.py). You read
+#               the list, can edit it, and say yes. Nothing is uninstalled; tools/disable.sh keeps its own record and
+#               refuses to touch the packages Android needs to boot. tools/setup-cursed.sh is this option as a command.
+#   --list FILE use this debloat list (one package per line, # comments) instead of looking for one; implies --debloat
 #   --rollback  undo it on the TV: take the theme off, turn the TV's own launcher back on and make it Home again, and
 #               remove this launcher if it was not there before. It uses the record written just before the install
 #               (~/.cleanyourtv/cursed-<tv address>.txt: which launcher owned Home, which stock launchers were on, whether
@@ -21,20 +27,23 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-NO_BUILD=0; TV="${TV_HOST:-}"; YES=0; FIND=0; SUBNET=""; ROLLBACK=0
+NO_BUILD=0; TV="${TV_HOST:-}"; YES=0; FIND=0; SUBNET=""; ROLLBACK=0; DEBLOAT=0; LIST_ARG=""
 while [ $# -gt 0 ]; do
   case "$1" in
+    --debloat) DEBLOAT=1; shift ;;
+    --list) LIST_ARG="${2:-}"; [ -n "$LIST_ARG" ] || { echo "ERROR: --list needs a file." >&2; exit 2; }; DEBLOAT=1; shift 2 ;;
     --rollback) ROLLBACK=1; shift ;;
     --yes|-y) YES=1; shift ;;
     --find) FIND=1; shift ;;
     --subnet) SUBNET="${2:-}"; [ -n "$SUBNET" ] || { echo "ERROR: --subnet needs a network like 192.168.1.0/24." >&2; exit 2; }; shift 2 ;;
     --no-build) NO_BUILD=1; shift ;;
-    -h|--help) sed -n 2,26p "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n 2,32p "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     -*) echo "ERROR: unknown option $1 (see --help)." >&2; exit 2 ;;
     *) TV="$1"; shift ;;
   esac
 done
 command -v python3 >/dev/null || { echo "ERROR: Python 3 is not installed (https://www.python.org/downloads/)." >&2; exit 1; }
+STEPS=5; [ "$DEBLOAT" = 1 ] && STEPS=6
 step() { printf '\n==> %s\n' "$*"; }
 INTERACTIVE=0; [ -t 0 ] && INTERACTIVE=1
 
@@ -198,6 +207,86 @@ checkpoint_repo() {
   fi
 }
 
+# ---- --debloat: which list, shown and confirmed, applied last --------------------------------------------------------------
+LISTS_DIR="$ROOT/examples"
+show_list() { grep -vE '^[[:space:]]*(#|$)' "$1" | sed -E 's/[[:space:]]+#/   #/' | cut -c1-150; }
+list_count() { grep -vE '^[[:space:]]*(#|$)' "$1" | grep -c . || true; }
+
+# Prints the path of the list to use on stdout (everything said to the person goes to stderr). Looks for a tested list by the
+# TV's own model and build; failing that, offers the generic audit.
+pick_list() {
+  local model device name fp matches n choice tmp def
+  model="$(tvq 'getprop ro.product.model' | tail -n 1)"; device="$(tvq 'getprop ro.product.device' | tail -n 1)"
+  name="$(tvq 'getprop ro.product.name' | tail -n 1)"; fp="$(tvq 'getprop ro.build.fingerprint' | tail -n 1)"
+  matches="$(python3 tools/find_list.py "$model" "$device" "$name" "$fp" 2>/dev/null || true)"
+  {
+    echo
+    echo "What to switch off on this TV ($model, $fp):"
+    if [ -n "$matches" ]; then
+      echo "  Tested lists that name this build. A list is for one firmware: check that the TV it is for is yours."
+      printf '%s\n' "$matches" | awk -F'\t' '{ printf "  %d) %s\n       examples/%s\n", NR, substr($3,1,110), $2 }'
+    else
+      echo "  No tested list names this TV's build, so nothing from examples/ is offered: a list for another firmware can switch off"
+      echo "  something this one needs."
+    fi
+    echo "  g) only the voice, advertising and telemetry services this TV reports about itself (an audit, read-only until you say yes)"
+    echo "  n) nothing"
+  } >&2
+  n=$(printf '%s' "$matches" | grep -c . || true)
+  while :; do
+    def=g; [ "$n" -gt 0 ] && def=1
+    read -r -p "Which? [$def] " choice || return 1
+    choice="${choice:-$def}"
+    case "$choice" in
+      n|N) return 1 ;;
+      g|G) tmp="$(mktemp -d)/privacy.txt"   # privacy.py will not overwrite a file that exists
+           echo "Auditing the TV..." >&2
+           if "$PY" -I tools/privacy.py >&2 && "$PY" -I tools/privacy.py --write "$tmp" >&2 && [ -s "$tmp" ]; then printf '%s\n' "$tmp"; return 0; fi
+           echo "Nothing was identified to switch off." >&2; return 1 ;;
+      *[!0-9]*|'') echo "A number from the list, g or n." >&2 ;;
+      *) if [ "$choice" -ge 1 ] && [ "$choice" -le "$n" ]; then
+           printf 'examples/%s/debloat.txt\n' "$(printf '%s\n' "$matches" | sed -n "${choice}p" | cut -f2)"; return 0
+         fi
+         echo "No such number." >&2 ;;
+    esac
+  done
+}
+
+# Chooses and confirms the list before anything is built; DEBLOAT_LIST is the copy that gets applied (kept under
+# ~/.cleanyourtv so that the rollback can find the same list again), or empty for none.
+DEBLOAT_LIST=""
+debloat_choose() {
+  local src work a
+  mkdir -p "$RECORD_DIR"
+  if [ -n "$LIST_ARG" ]; then
+    [ -f "$LIST_ARG" ] || { echo "ERROR: --list $LIST_ARG is not a file. Nothing was changed." >&2; exit 2; }
+    src="$LIST_ARG"
+  else
+    if [ "$INTERACTIVE" != 1 ]; then
+      echo "ERROR: choosing what to switch off needs a person to answer; with no one to ask, give the list: --list FILE." >&2
+      exit 2
+    fi
+    src="$(pick_list)" || { echo "Nothing will be switched off."; return 0; }
+  fi
+  work="$(mktemp)"; cp "$src" "$work"
+  while :; do
+    echo >&2
+    echo "This list switches off $(list_count "$work") packages. Nothing is uninstalled, and the rollback or tools/restore.sh turns them back on." >&2
+    if [ "$YES" = 1 ]; then break; fi
+    show_list "$work" | head -n 14 >&2
+    [ "$(list_count "$work")" -le 14 ] || echo "  ... and $(( $(list_count "$work") - 14 )) more (v shows all)" >&2
+    read -r -p "Switch these off? y = yes, v = view all, e = edit the list first, n = no: " a || exit 1
+    case "$a" in
+      y|Y|yes) break ;;
+      v|V) show_list "$work" >&2 ;;
+      e|E) ${EDITOR:-vi} "$work" ;;
+      *) echo "Nothing will be switched off."; rm -f "$work"; return 0 ;;
+    esac
+  done
+  DEBLOAT_LIST="$RECORD_DIR/cursed-$(printf '%s' "$TV_HOST" | tr -c 'A-Za-z0-9._-' '_').debloat-$(date +%Y%m%d-%H%M%S).txt"
+  cp "$work" "$DEBLOAT_LIST"; rm -f "$work"
+}
+
 rollback_tv() {
   if [ ! -f "$RECORD" ]; then
     echo "ERROR: no record of this TV's original state at $RECORD, so there is nothing to roll back to." >&2
@@ -209,7 +298,8 @@ rollback_tv() {
   home="$(sed -n 's/^home=//p' "$RECORD")"; ours="$(sed -n 's/^launcher_before=//p' "$RECORD")"
   stock="$(sed -n 's/^stock_enabled_before=//p' "$RECORD")"; was_home="${home%%/*}"
   echo
-  echo "Before the install the TV's Home was ${was_home:-unknown}; this puts that back, takes the Cursed theme off, and"
+  echo "Before the install the TV's Home was ${was_home:-unknown}; this puts that back, takes the Cursed theme off, switches back on"
+  echo "anything a list of --debloat switched off, and"
   [ "$ours" = absent ] && echo "removes the Cursed launcher (it was not installed before)." || echo "leaves the Cursed launcher installed (it was there before)."
   if [ "$YES" != 1 ]; then
     read -r -p "Roll back? [y/N] " GO || return 1
@@ -217,6 +307,18 @@ rollback_tv() {
   fi
   step "Rolling back"
   tools/theme.sh --reset || echo "(the theme could not be reset; going on)" >&2
+  # What the debloat switched off comes back first (newest list first), through the record disable.sh wrote for it.
+  local lists L
+  lists="$(sed -n 's/^debloat_list=//p' "$RECORD" | awk '{ a[NR] = $0 } END { for (i = NR; i > 0; i--) print a[i] }')"
+  for L in $lists; do
+    if [ -f "$L" ]; then
+      echo "Switching back on what $(basename "$L") switched off..."
+      case " $KNOWN_STOCK " in *" $was_home "*) tools/restore.sh "$L" "$was_home" || echo "(that list could not be fully undone: tools/restore.sh $L)" >&2 ;;
+        *) tools/restore.sh "$L" || echo "(that list could not be fully undone: tools/restore.sh $L)" >&2 ;; esac
+    else
+      echo "(the list $L is gone, so what it switched off cannot be switched back on from here)" >&2
+    fi
+  done
   for k in $stock; do
     tvq "pm enable --user 0 $k" >/dev/null || true
   done
@@ -242,14 +344,14 @@ rollback_tv() {
   echo "Rolled back. The record is kept as $RECORD.done."
 }
 
-step "1/5  The tools"
+step "1/$STEPS  The tools"
 if [ ! -x tools/venv/bin/python ]; then
   python3 -m venv tools/venv
   tools/venv/bin/pip install -q -r tools/requirements.txt
 fi
 PY=tools/venv/bin/python
 
-step "2/5  Reaching the TV at $TV_HOST"
+step "2/$STEPS  Reaching the TV at $TV_HOST"
 if ! "$PY" -I tools/tv.py --probe; then
   echo >&2
   echo "ERROR: could not talk to the TV. Check that it is on, that USB debugging (and Network or Wireless debugging)" >&2
@@ -267,13 +369,15 @@ if [ "$YES" != 1 ]; then
   echo
   echo "That is the TV at $TV_HOST. The next steps make Cursed its home screen: they build and install the launcher and turn"
   echo "off the TV's own launcher (nothing is uninstalled, and it is put back if the new one does not start)."
+  [ "$DEBLOAT" = 1 ] && echo "You will then choose what else to switch off, and read it before anything is."
   read -r -p "Go ahead? [y/N] " GO || exit 1
   case "$GO" in y|Y|yes|YES) ;; *) echo "Nothing was changed."; exit 0 ;; esac
 fi
 
+if [ "$DEBLOAT" = 1 ]; then debloat_choose; fi
 checkpoint_repo
 
-step "3/5  Building the launcher"
+step "3/$STEPS  Building the launcher"
 APK=launcher/app/build/outputs/apk/release/app-release.apk
 if [ "$NO_BUILD" = 1 ]; then
   [ -f "$APK" ] || { echo "ERROR: --no-build, but $APK does not exist." >&2; exit 1; }
@@ -297,7 +401,7 @@ else
   fi
 fi
 
-step "4/5  Installing it and making it Home"
+step "4/$STEPS  Installing it and making it Home"
 save_record || exit 1
 LOG="$(mktemp)"
 trap 'rm -f "$LOG"' EXIT
@@ -309,8 +413,22 @@ STOCK="$(sed -n 's/^Stock launcher: //p' "$LOG" | tail -n 1 | tr -d '\r')"
 "$PY" -I tools/tv.py 'pm grant com.gathin.tvhome android.permission.READ_TV_LISTINGS; pm grant com.gathin.tvhome android.permission.ACCESS_COARSE_LOCATION; echo granted' >/dev/null 2>&1 || true
 LOCATION_MODE="$("$PY" -I tools/tv.py 'settings get secure location_mode' 2>/dev/null | tail -n 1 | tr -d '\r' || true)"
 
-step "5/5  The Cursed theme"
+step "5/$STEPS  The Cursed theme"
 tools/theme.sh themes/cursed
+
+if [ "$DEBLOAT" = 1 ]; then
+  step "6/$STEPS  Switching off what you chose"
+  if [ -z "$DEBLOAT_LIST" ]; then
+    echo "Nothing was chosen to switch off."
+  else
+    echo "debloat_list=$DEBLOAT_LIST" >> "$RECORD"   # before it runs, so that a half-applied list is still undone by --rollback
+    if tools/disable.sh "$DEBLOAT_LIST"; then
+      echo "Done. Undo just this, keeping the launcher and theme, with: tools/restore.sh $DEBLOAT_LIST"
+    else
+      echo "The list did not apply cleanly. What was changed is recorded: tools/restore.sh $DEBLOAT_LIST puts it back, or --rollback undoes everything." >&2
+    fi
+  fi
+fi
 
 cat <<EOF
 

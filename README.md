@@ -30,6 +30,7 @@
 > ```bash
 > git clone -b cursed https://github.com/nnishad/cleanyourtv && cd cleanyourtv
 > tools/install-cursed.sh        # finds your TV on the Wi-Fi, asks which one, then asks before it changes anything
+> tools/setup-cursed.sh          # the same, and also switches off what the TV maker runs (you read the list first)
 > ```
 >
 > What it does, the options (weather), updating and undoing: [themes/cursed/README.md](themes/cursed/README.md). The
@@ -215,6 +216,7 @@ tools/theme.sh themes/aurora                                 # push a theme; --r
 | [`tools/adb-closed.py`](tools/adb-closed.py) | Checks that the TV's network ADB port is closed once debugging is off: exits 0 when the TV refuses the connection, 1 while it is still open, 2 when nothing answered or the check itself could not run. No `nc` needed. |
 | [`tools/philips-api.py`](tools/philips-api.py) | Philips only: checks that the JointSpace control API Home Assistant uses still answers, before and after a debloat (`tools/venv/bin/python -I tools/philips-api.py <tv ip>`). Port 1926 over HTTPS first, then 1925; reads only what answers without pairing. |
 | [`tools/privacy.py`](tools/privacy.py) | Audits the TV for voice, ACR and telemetry candidates and prints the evidence for each; `--write` turns the findings into a list `disable.sh` and `restore.sh` already understand. |
+| [`tools/setup-cursed.sh`](tools/setup-cursed.sh), [`find_list.py`](tools/find_list.py) | The Cursed fork and a debloat in one command, no assistant: `install-cursed.sh --debloat`. `find_list.py` names the tested list in `examples/` that belongs to the connected TV's model and build, judged from its fingerprint; it applies nothing. [Guide](themes/cursed/README.md#debloat-too-without-an-assistant). |
 | [`tools/install-cursed.sh`](tools/install-cursed.sh) | The Cursed fork in one command: finds the TV on the Wi-Fi and asks which one, then the tools, the launcher built (natively or in Docker) and made Home, the Watch Next permission and the `cursed` theme. `--find` only lists TVs, `--weather "Place,lat,lon"` turns the weather line on. [Guide](themes/cursed/README.md). |
 | [`tools/theme.sh`](tools/theme.sh), [`theme_restart.py`](tools/theme_restart.py) | Push a folder from [`themes/`](themes/) to the launcher and restart Home. |
 | [`tools/manage.py`](tools/manage.py) | List every add-on, theme and switch with its screenshot, see what is on the TV, and install, update or remove one by running its creator's own script. |
