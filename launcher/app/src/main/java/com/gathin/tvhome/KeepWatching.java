@@ -96,36 +96,6 @@ final class KeepWatching {
         list.setItemAnimator(null);
         list.setHasFixedSize(true);
         list.setAdapter(new Adapter());
-        list.addItemDecoration(new EdgeShadow(density));
-    }
-
-    /**
-     * A soft dark shade over the row's left and right edges, drawn only on a side that has more cards beyond it, so a
-     * card cut by the edge reads as continuing rather than as clipped. Dark over any scene, and no offscreen layer.
-     */
-    private static final class EdgeShadow extends RecyclerView.ItemDecoration {
-        private final float length;
-        private final android.graphics.Paint left = new android.graphics.Paint(), right = new android.graphics.Paint();
-        private int shadedFor;
-
-        EdgeShadow(float density) {
-            length = 56 * density;
-        }
-
-        @Override
-        public void onDrawOver(@NonNull android.graphics.Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
-            int w = parent.getWidth(), h = parent.getHeight();
-            if (w == 0) return;
-            if (shadedFor != w) {
-                int[] colors = {0xB3000000, 0x00000000};
-                left.setShader(new android.graphics.LinearGradient(0, 0, length, 0, colors, null, android.graphics.Shader.TileMode.CLAMP));
-                right.setShader(new android.graphics.LinearGradient(w, 0, w - length, 0, colors, null, android.graphics.Shader.TileMode.CLAMP));
-                shadedFor = w;
-            }
-            float top = parent.getPaddingTop(), bottom = h - parent.getPaddingBottom();   // the cards, not their padding
-            if (parent.canScrollHorizontally(-1)) c.drawRect(0, top, length, bottom, left);   // see KeepWatching.focusFirst for the end nudge
-            if (parent.canScrollHorizontally(1)) c.drawRect(w - length, top, w, bottom, right);
-        }
     }
 
     /** Looks at the list again (Home came back); a no-op when it has not changed. */
@@ -200,12 +170,12 @@ final class KeepWatching {
         }
     }
 
-    /** Lines the row up with the dock band: it starts at the band's left edge and is cut, under a shade, at its right. */
+    /** Lines the row up with the dock band: it starts at the band's left edge, and a card cut at its right fades out (FadeRow). */
     void alignTo(int left, int right) {
         int wrap = ((View) block.getParent()).getWidth();
         if (right - left <= 0 || wrap <= 0) return;
         // The list reaches zoomRoom past the band on both sides, so a focused card's zoom is not cut; its first card
-        // still starts on the band's left edge, and the peeking card fades out under the edge shade.
+        // still starts on the band's left edge, and the peeking card fades out there.
         int zoomRoom = (int) (16 * density);
         int padStart = Math.max(0, left - zoomRoom), padEnd = Math.max(0, wrap - right - zoomRoom);
         block.setPaddingRelative(padStart, block.getPaddingTop(), padEnd, block.getPaddingBottom());
