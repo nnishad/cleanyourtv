@@ -517,6 +517,10 @@ final class KeepWatching {
                 v.setOnFocusChangeListener((view, has) -> {
                     // Where you are and how long is left show on the focused card only; Home's context line is for apps.
                     sub.animate().alpha(has ? 1f : 0f).setDuration(Motion.FAST).start();
+                    // A title too long for the card runs across it while the card is focused, and ends in dots otherwise.
+                    title.setEllipsize(has ? android.text.TextUtils.TruncateAt.MARQUEE : android.text.TextUtils.TruncateAt.END);
+                    title.setMarqueeRepeatLimit(-1);
+                    title.setSelected(has);
                     if (has) listener.onCardFocused("");
                 });
                 Focus.attach(v, true, false, (view, code, event) -> atEnd(view, code));   // zoom, press dip, the end nudge; the rim is the foreground above

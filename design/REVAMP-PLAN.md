@@ -243,3 +243,41 @@ The scripts for steps 1 to 4 and 7 were run from a temporary folder and are not 
   ADB: apps cannot press D-pad keys before Android 13. Put off by choice.
 - **Header on the left.** Kept centred: the date line is the clock's caption, and now moves with it.
 - **Before the TV work ends:** ADB over the network (port 5555) is still on; close it as `AGENTS.md` describes.
+
+## 8. Keep watching, Inputs and the polish pass (2026-11-14, emulator only)
+
+| Change | Detail | Commit |
+|---|---|---|
+| Night scene removed | At the user's request. From 19 to 5 Home shows City at dusk or Ember ridges | `274236c6` |
+| Keep watching cards | Picture cards with the title inside, 4.4 across the dock band (four whole and a part of a fifth). Where you are and how long is left show on the focused card only. A tile-sized version in the dock's columns was tried first (`480c47dd`) and replaced | `2cae6e51` |
+| Cut cards fade | A card cut by the row's edge fades into the scene (`FadeRow`); the black edge shade is gone | `acf8fad1` |
+| Inputs button | Always shown with `couch_menus`: its list always ends with Bluetooth and Network | `489f4449` |
+| Polish pass | The twelve items below | this commit |
+
+The polish pass, from an audit of every screen:
+
+1. **Context line when scrolled.** Past the dock it rode up with the Keep watching heading and sat on the gear button; it
+   now stays just above the topmost row of tiles.
+2. **Windows over Home are near opaque.** `glass_panel` (Inputs, gear and tile menus, hints) went from 40 to 72% dark
+   to 96 to 98%: the tile menu opens over the dock tiles and its rows ran into their logos. The sheet is 97%.
+3. **Hints in our own glass.** Every toast became `hint()`, a glass pill at the top left on the top buttons' line; the
+   system toast sat on the dock tiles during a reorder.
+4. **One settings screen.** Apps per row, rows below dock, dock opacity, animations, advanced effects, wallpaper, open
+   on start and default home moved into the sheet (sections: Look and scenes, Home rows, Apps and layout, Motion,
+   Weather, About). `LauncherSettingsActivity` stays for themes without `couch_menus`; the sheet no longer opens it.
+5. **Switches and steppers.** On/off rows show `SwitchView`, whose thumb slides; rows with a few values show the value
+   between two small arrows and step with OK or Right, back with Left. Rows that open a page end in an arrow.
+6. **Context line only where it says something.** Not for Inputs (it says so itself) or the gear; still the network's
+   name beside the Wi-Fi icon, and app names.
+7. **Scenes dissolve.** A scene that changes with the time of day dissolves out of the old one, and the first scene
+   fades up from the flat colour (`SceneView.setFader`: a picture over the scene faded by the compositor, no redraws).
+8. **A rebuild is not a blink.** A setting changed beside Home rebuilds Home; the old Home's last frame (PixelCopy) lies
+   over the new one until its rows and scene are in, then dissolves (`coverRebuild`).
+9. **The minute dissolves.** The old digits dissolve into the new over 420 ms, only when no key was pressed in the last
+   1.5 s, so its redraws never land on a focus move.
+10. **The sheet's levels slide.** Rows come in from the side they come from; a change in place does not move.
+11. **Serif titles.** The sheet's titles use Instrument Serif, the clock's face; everything else stays Outfit.
+12. **Long titles run.** The focused Keep watching card's title scrolls when it does not fit.
+
+Checked on the emulator with screen recordings (scene step, minute change, cold start) and screenshots of every
+screen. Not measured on the TV: items 7 to 9 add animation and a full-screen copy, and need the phase 6 numbers.
