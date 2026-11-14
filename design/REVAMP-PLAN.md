@@ -139,3 +139,18 @@ Each phase ends with an emulator screenshot sheet for review; the TV install is 
 - **Upstream:** the fork diverges further; pulling CleanYourTV updates gets harder.
 - **Choices that are yours:** right-side settings sheet (or keep full-screen); glass focus in
   settings (or keep white rows); time-aware scenes as the default (or keep random).
+
+## 6. Status (2026-11-14, emulator only)
+
+| Phase | State | Commit |
+|---|---|---|
+| 0 Foundations | Done: `tokens.xml`, `Motion` tokens, shared `glass_*` drawables, `tools/local-sheet.sh` | `ccdb5c8f` |
+| 1 Focus | Done, with one change of plan: every control shares the same glass, zoom, press dip and end nudge (`Focus`), and tiles keep their moving glass slab. A single slab gliding across *all* rows was not built: it would rewrite upstream's tuned D-pad code for little visible gain. Inactivity dim after 20 s | `ccdb5c8f` |
+| 2 Home | Done: context line, Keep watching v2 (icon badge, accent progress, zoom room), scene accent, time and fog scenes, arrival fade, launch from tile | `5e232ea1` |
+| 3 Menus and settings | Done: right-side sheet with live preview, launcher settings on the tokens. Reorder mode, app library and card prompt use the shared drawables but were not redesigned | `0fc07921` |
+| 4 Idle and ambient | Done: clock and screensaver on Antonio and the tokens (not checked on screen: the emulator will not open it from adb) | `0fa6608b` |
+| 5 Accessibility and language | Done: strings in `strings.xml` (English only), card descriptions, first-run tips | `b4241270` |
+| 6 TV tuning | Not started: needs the TV, and the user's yes |  |
+
+Not yet measured: frame times on the TV. The press dip, nudge, arrival and dim add short animations of
+small views only; `jank.sh` and `tools/bench.py` must confirm the phase 6 gates before this ships.
