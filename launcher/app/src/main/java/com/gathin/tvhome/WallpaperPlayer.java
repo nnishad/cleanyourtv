@@ -106,8 +106,10 @@ final class WallpaperPlayer {
     private void showFirst() {
         String previous = preferences.getString("image", "");
         List<File> playable = playable();
-        File first = WallpaperRotation.find(playable, previous);
-        if (first == null) first = WallpaperRotation.pick(playable, previous, order, random);
+        // A new picture at every start (a restart, or the launcher being started again), not the
+        // one shown last. pick() leaves out the previous picture, so two starts never show the same one in a row.
+        File first = WallpaperRotation.pick(playable, previous, order, random);
+        if (first == null) first = WallpaperRotation.find(playable, previous);
         while (first != null) {
             Bitmap bitmap = decode(first);
             if (bitmap != null) {

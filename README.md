@@ -23,6 +23,15 @@
   <a href="docs/PRESS.md"><img src="docs/card.jpg" alt="416 TV models · 106 brands · 31 languages · 572 KB launcher. Featured in TechCrunch, TechRadar, Tom's Guide, Mashable, Android Authority, XDA, FlatpanelsHD, It's FOSS, Phandroid, GIGAZINE, Xataka, WinFuture, Frandroid, Macitynet, Techaeris, TechPP and 396 more: 412 articles from 54 countries. Before: stock Google TV home with a sponsored ad. After: the Clean Your TV launcher." width="800"></a>
 </p>
 
+> **This branch is a fork with the Cursed theme:** photographic scenes with a glass clock set into their depth, a
+> Keep watching row and a Home settings panel. It needs this branch's launcher, which is larger than upstream's and
+> asks for two more permissions. What it is and how to install it: [themes/cursed/README.md](themes/cursed/README.md).
+> Everything below is upstream [CleanYourTV](https://github.com/Gathin23/cleanyourtv)'s own page.
+
+<p align="center">
+  <a href="themes/cursed/README.md"><img src="themes/cursed/screenshot.jpg" width="720" alt="Home with the Cursed theme"></a>
+</p>
+
 ## Start here
 
 | You have | Go to |

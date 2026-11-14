@@ -18,6 +18,7 @@ public class GlassView extends View {
     private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint specular = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint rim = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint edge = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint glow = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF rect = new RectF();
     private final float density;
@@ -25,7 +26,7 @@ public class GlassView extends View {
     /** Glow colour as 0xRRGGBB: white normally, a festival's accent (diya gold) while a festive skin is on. */
     private int glowRgb = 0xFFFFFF;
     /** Glow strength: the white glow stays faint, a coloured one needs more alpha to read as warm light. */
-    private int glowAlpha = 0x30;
+    private int glowAlpha = 0;   // No white halo (was 0x30); a coloured accent still glows
     /** glass_style rim or halo: no sheen and no fill, only the crisp rim (and, for halo, a lighter outer glow). */
     private boolean flat;
     private boolean halo;
@@ -37,6 +38,9 @@ public class GlassView extends View {
         rim.setStyle(Paint.Style.STROKE);
         rim.setStrokeWidth(1.5f * density);
         rim.setColor(0xCCFFFFFF);
+        edge.setStyle(Paint.Style.STROKE);
+        edge.setStrokeWidth(2f * density);
+        edge.setColor(0xFFFFFFFF);
         glow.setStyle(Paint.Style.STROKE);
         // Cache the slab as a texture. The spring only changes translation, so the GPU can
         // move it without replaying clipPath and the glow on every frame. That path is
@@ -48,7 +52,7 @@ public class GlassView extends View {
     void setAccent(int argb) {
         if (argb == 0) {
             glowRgb = 0xFFFFFF;
-            glowAlpha = 0x30;
+            glowAlpha = 0;
             rim.setColor(0xCCFFFFFF);
         } else {
             glowRgb = argb & 0xFFFFFF;
@@ -89,7 +93,7 @@ public class GlassView extends View {
         // Outer glow: thin rings across the inset, each a little fainter, so it fades out smoothly. Three wide
         // strokes left visible bands once the glow took an app's colour at a stronger alpha. The hardware layer
         // caches the result, so the rings cost one draw, not one per frame of the spring.
-        if (!flat || halo) {
+        if ((!flat || halo) && glowAlpha > 0) {
             int rings = 12;
             float step = inset / rings;
             int alpha = flat ? glowAlpha / 2 : glowAlpha;
@@ -116,5 +120,12 @@ public class GlassView extends View {
         canvas.restore();
 
         canvas.drawRoundRect(rect, radius, radius, rim);
+
+        // A brighter lip along the top edge, like light catching the slab. Only the top of the
+        // rim is redrawn in full white; clipRect keeps it on the GPU and the hardware layer caches the result.
+        canvas.save();
+        canvas.clipRect(rect.left, rect.top - edge.getStrokeWidth(), rect.right, rect.top + radius * 0.55f);
+        canvas.drawRoundRect(rect, radius, radius, edge);
+        canvas.restore();
     }
 }

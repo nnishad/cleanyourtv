@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A Keep watching card: the shared glass (glass_bg). -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android" android:enterFadeDuration="@integer/motion_fast" android:exitFadeDuration="@integer/motion_fast">
+    <item android:state_focused="true" android:drawable="@drawable/glass_focus" />
+    <item android:drawable="@drawable/glass_rest" />
+</selector>

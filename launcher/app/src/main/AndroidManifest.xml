@@ -9,6 +9,12 @@
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <!-- Couch-tv port, watch_row: Android's Watch Next list (what Netflix, Hotstar and others say you are part way
+         through), read only. Not granted on install: pm grant com.gathin.tvhome android.permission.READ_TV_LISTINGS -->
+    <uses-permission android:name="android.permission.READ_TV_LISTINGS" />
+    <!-- Only for the weather line under the clock (Weather.java), one small HTTPS request to
+         Open-Meteo every 30 minutes while Home is on screen. Not part of the upstream launcher. -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <!-- Needed since Android 10 to read the Wi-Fi network name for the network pill. Never requested at
          runtime: build-and-install grants it with pm grant, so lint's Android 12 "ask for COARSE with
          FINE" rule does not apply here. -->
@@ -31,6 +37,9 @@
         </intent>
         <intent>
             <action android:name="android.settings.WIFI_SETTINGS" />
+        </intent>
+        <intent>
+            <action android:name="android.settings.BLUETOOTH_SETTINGS" />
         </intent>
         <intent>
             <action android:name="android.settings.DISPLAY_SETTINGS" />
@@ -106,6 +115,13 @@
             </intent-filter>
         </activity>
 
+        <!-- Couch-tv port, couch_menus: the Home settings screen the gear opens. -->
+        <activity
+            android:name=".CouchSettingsActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:screenOrientation="landscape"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar.Fullscreen" />
         <activity
             android:name=".LauncherSettingsActivity"
             android:exported="false"

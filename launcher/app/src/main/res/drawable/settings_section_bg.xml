@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Home settings sections: focus glass while focused, faint rest glass for the open one. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android" android:enterFadeDuration="@integer/motion_fast" android:exitFadeDuration="@integer/motion_fast">
+    <item android:state_focused="true" android:drawable="@drawable/glass_focus" />
+    <item android:state_selected="true" android:drawable="@drawable/glass_rest" />
+    <item android:drawable="@android:color/transparent" />
+</selector>

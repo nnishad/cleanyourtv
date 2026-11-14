@@ -196,6 +196,34 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private boolean lunar;
     private int lunarOffset;
     private TextView stats;
+    /** The weather line (Weather.java) and what it needs. Off: hidden, and no network use. */
+    private TextView weather;
+    private boolean weatherOn, weatherBusy;
+    private String weatherPlace = "", weatherLat = "", weatherLon = "";
+    private static final long WEATHER_REFRESH_MS = 30 * 60 * 1000L, WEATHER_RETRY_MS = 5 * 60 * 1000L;
+    private final Runnable weatherTick = this::refreshWeather;
+    /** Couch-tv port (Config.scenes): the scene behind Home, drawn natively; null when the theme does not ask for it. */
+    private SceneView sceneView;
+    /** Couch-tv port (Config.watchRow): the Keep watching row above the dock; null when the theme does not ask for it. */
+    private KeepWatching keepWatching;
+    /** Couch-tv port (Config.hideRowsIdleSeconds): after this long untouched the rows and buttons fade out, leaving the
+     *  scene and its clock; any key brings them back and is not passed on. 0 is off. */
+    private long hideRowsMs;
+    private boolean rowsHidden;
+    /** Couch-tv port (Config.couchMenus): the gear opens Home settings / TV settings, and Inputs ends with Bluetooth and Network. */
+    private boolean couchMenus;
+    private int swallowKey;
+    private View rowsWrap, topButtonsView;
+    private final Runnable hideRows = this::hideRowsNow;
+    /** The tvOS inactivity cue (design/REVAMP-PLAN.md, 3.2): after a while without a key, all but the focused control dim. */
+    private static final long IDLE_DIM_MS = 20_000L;
+    private static final float IDLE_DIM_ALPHA = 0.6f;
+    private boolean idleDimmed;
+    private final Runnable idleDim = this::idleDimNow;
+    /** The context line (design/REVAMP-PLAN.md 3.3): top left, level with the top buttons, it names what has focus. */
+    private TextView contextLine;
+    private String contextShown = "";
+    private float contextBandLeft = -1f, contextBandRight = -1f;
     private List<RaceWeekend.Race> raceCalendar;
     private View racePanel;
     private TextView raceKicker, raceHeadline, raceSessions;
@@ -448,9 +476,27 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private String clockFormat = "system";
     private java.util.Map<Integer, String> homeHoldAppKeys = java.util.Collections.emptyMap();
 
+    /** The Home on screen, for the settings sheet's live preview (refreshLive). */
+    private static java.lang.ref.WeakReference<MainActivity> live = new java.lang.ref.WeakReference<>(null);
+
+    /**
+     * A setting changed in the sheet beside Home: rebuild Home now, behind the sheet, so the change shows at once.
+     * The rebuilt Home has the new settings revision, so returning to it does not rebuild again.
+     */
+    static void refreshLive() {
+        MainActivity home = live.get();
+        if (home != null && !home.isFinishing()) home.runOnUiThread(home::recreate);
+    }
+
+    /** Reduced motion as the theme and config.xml set it, for other screens that animate. */
+    static boolean reducedMotionNow(Context ctx) {
+        return Config.load(ctx).reducedMotion;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        live = new java.lang.ref.WeakReference<>(this);
         setContentView(R.layout.activity_main);
         density = getResources().getDisplayMetrics().density;
         // config.xml, overlaid by config.json from a pushed theme (see Config and tools/theme.sh).
@@ -503,6 +549,26 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // the theme's background, so launch looks the same.
         getWindow().setBackgroundDrawable(null);
         wallpaperPlayer = new WallpaperPlayer(this, root, cfg);
+        hideRowsMs = cfg.hideRowsIdleSeconds * 1000L;
+        couchMenus = cfg.couchMenus;
+        if (couchMenus) setUpContextLine();
+        if (cfg.dockTight) {   // more of the screen for the rows: half the side margins
+            View content = findViewById(R.id.content);
+            content.setPaddingRelative(Math.round(24 * density), content.getPaddingTop(),
+                    Math.round(24 * density), content.getPaddingBottom());
+        }
+        rowsWrap = findViewById(R.id.rowsWrap);
+        topButtonsView = findViewById(R.id.topButtons);
+        if (cfg.scenes) {
+            // Behind everything; the scene draws its own clock and date, so the header's are hidden (kept in
+            // the layout, as the weather line and the pills are placed against it).
+            sceneView = new SceneView(this, cfg);
+            root.addView(sceneView, 0, new FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            root.setBackground(null);   // the scene covers the screen (its own colour until the photo is in): one fill fewer a frame
+            findViewById(R.id.leftBlock).setVisibility(View.INVISIBLE);
+            findViewById(R.id.weather).setVisibility(View.GONE);
+        }
         sky = findViewById(R.id.sky);
         sky.setIntensity(cfg.skyIntensity);
         glass = findViewById(R.id.glass);
@@ -566,6 +632,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnWifi = findViewById(R.id.btnWifi);
         shamsiDate = findViewById(R.id.shamsiDate);
         stats = findViewById(R.id.stats);
+        weather = findViewById(R.id.weather);
+        weatherPlace = getString(R.string.weather_place).trim();
+        weatherLat = getString(R.string.latitude).trim();
+        weatherLon = getString(R.string.longitude).trim();
+        weatherOn = getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE)
+                .getBoolean("show_weather", getResources().getBoolean(R.bool.show_weather)) && !weatherPlace.isEmpty()
+                && !weatherLat.isEmpty() && !weatherLon.isEmpty();
         raceCalendar = cfg.raceCalendar;
         racePanel = findViewById(R.id.racePanel);
         raceKicker = findViewById(R.id.raceKicker);
@@ -605,6 +678,19 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         libraryExcludedApps = new HashSet<>(cfg.libraryExcludedApps);
 
         grid = findViewById(R.id.grid);
+        if (cfg.watchRow) {
+            keepWatching = new KeepWatching(this, findViewById(R.id.watchBlock), findViewById(R.id.watchList),
+                    new KeepWatching.Listener() {
+                        @Override
+                        public void onCardFocused(String context) {
+                            hideGlass();   // the dock's highlight belongs to a tile, not a card
+                            showContext(context);
+                        }
+
+                    });
+        }
+        // The scene's accent tints the Keep watching progress bars; it arrives once the photo is decoded.
+        if (sceneView != null && keepWatching != null) sceneView.setAccentListener(keepWatching::setAccent);
         rtlAppGrid = getResources().getBoolean(R.bool.rtl_app_grid);
         // Mirror only the app grid; the header and other locales keep their own layouts.
         // single_row: one span laid out sideways, so the same adapter, glass and dock band serve a scrolling row.
@@ -677,8 +763,22 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             public void onChildViewDetachedFromWindow(@NonNull View v) {
             }
         });
-        if (dockRow) grid.addItemDecoration(new DockDecoration(COLUMNS, density, cinematic, cfg.alwaysShowNames, cfg.dockOpacity, cfg.dockGlass, cfg.dockEvenPadding, cfg.dockBand,
-                singleRow, cfg.dockBandAll));
+        if (dockRow) {
+            DockDecoration deco = new DockDecoration(COLUMNS, density, cinematic, cfg.alwaysShowNames, cfg.dockOpacity, cfg.dockGlass, cfg.dockEvenPadding, cfg.dockBand,
+                    singleRow, cfg.dockBandAll);
+            if (cfg.dockTight) {
+                deco.setTight(true);
+                // The cards and the top buttons share the band's edges.
+                deco.setEdgeListener((left, right) -> {
+                    if (keepWatching != null) keepWatching.alignTo(Math.round(left), Math.round(right));
+                    alignContext(left, right);
+                    // The band's edges are in the grid's coordinates and the buttons' in their row's; both start at the
+                    // screen's side margin, so the two compare directly.
+                    topButtonsView.setTranslationX(Math.min(0f, right - topButtonsView.getRight()));
+                });
+            }
+            grid.addItemDecoration(deco);
+        }
         if (cfg.fadeRows) TopFade.attach(grid, 48 * density);
         // Reduced motion: the tiles are simply there, with no entrance (reloadApps skips it there too).
         if (animations && !reducedMotion) {
@@ -715,12 +815,18 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // A single row never shows the names under its tiles (the title above the row names the app), so the
             // 7dp gap and 22dp label item_app.xml keeps for them would only lift the row: sit it that much lower.
             if (singleRow && !cfg.alwaysShowNames) want += (int) (29 * density);
+            // Scenes look: the dock sits lower, as in couch-tv, leaving the scene (and the Keep watching row) the room.
+            if (cfg.scenes && MainActivity.this.dockRow && !singleRow) want += (int) ((cfg.dockTight ? 50 : 26) * density);
             if (grid.getPaddingTop() != want) {
                 grid.setPadding(grid.getPaddingLeft(), want, grid.getPaddingRight(), grid.getPaddingBottom());
                 // A vertical grid parks the dock on the new padding line by scrolling (onTileFocused); a sideways
                 // row cannot scroll vertically, and the layout request made from inside this layout pass is
                 // dropped, so lay the row out again on the next frame. The glass and the title were placed for the
                 // old position, so fit them again once it has moved.
+                // A vertical grid parks the dock on the new line when a tile takes focus (onTileFocused). With focus on a
+                // top button (Home rebuilt after Home settings, a theme push) no tile does, and this pass drops its own
+                // layout request: the dock stayed up at the old padding until a key was pressed. Lay it out again.
+                if (!singleRow) grid.post(grid::requestLayout);
                 if (singleRow) grid.post(() -> {
                     grid.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
                         @Override
@@ -735,10 +841,20 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                     grid.requestLayout();
                 });
             }
+            if (keepWatching != null) keepWatching.place(want);
             // Cold start or column count > 4: the first focus can run before the grid has its final width or
             // padding, leaving the glass at the XML design size until a key is pressed.
             grid.post(this::refitGlass);
         });
+
+        if (keepWatching != null) {
+            grid.addOnScrollListener(new RecyclerView.OnScrollListener() {
+                @Override
+                public void onScrolled(@NonNull RecyclerView rv, int dx, int dy) {
+                    keepWatching.scrolled(rv.canScrollVertically(-1) ? rv.computeVerticalScrollOffset() : 0);
+                }
+            });
+        }
 
         // Keep the glass glued to its tile while the grid scrolls.
         grid.addOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -885,6 +1001,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             showSettingsMenu();
             return true;
         });
+        if (couchMenus) btnSettings.setOnClickListener(v -> showGearMenu());
 
         // Keep focus on the top bar at its ends and at the top: Android's focus finder would otherwise
         // jump to a tile far below when there is nothing in that direction.
@@ -893,7 +1010,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
             if (keyCode == KeyEvent.KEYCODE_DPAD_UP) return true;
             if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
-                // Back to the dock tile Up came from, not wherever the focus finder lands.
+                // The Keep watching row first when it is showing; else back to the dock tile Up came from, not
+                // wherever the focus finder lands.
+                if (keepWatching != null && keepWatching.focusFirst()) return true;
                 focusTile(singleRow ? lastFocused : lastFocused % COLUMNS);
                 return true;
             }
@@ -903,28 +1022,22 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) return v.getId() == leftButton;
             return keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && v.getId() == rightButton;
         };
-        btnInputs.setOnKeyListener(pillKeys);
-        btnWifi.setOnKeyListener(pillKeys);
-        btnVpn.setOnKeyListener(pillKeys);
-        btnSettings.setOnKeyListener(pillKeys);
-        btnReorder.setOnKeyListener(pillKeys);
-        btnLibraryTop.setOnKeyListener(pillKeys);
-        for (View button : topAppButtons) button.setOnKeyListener(pillKeys);
-        if (advancedEffects) {
-            List<View> pills = new ArrayList<>(Arrays.asList(btnInputs, btnWifi, btnVpn, btnReorder, btnLibraryTop, btnSettings));
-            pills.addAll(topAppButtons);
-            for (View button : pills) {
-                button.setOnFocusChangeListener((view, focused) -> view.animate()
-                        .scaleX(focused ? 1.04f : 1f).scaleY(focused ? 1.04f : 1f)
-                        .setDuration(reducedMotion ? Motion.REDUCED_MS : 160).start());
-            }
-        }
+        // The one focus vocabulary (Focus): zoom with advanced effects, the press dip under OK, a nudge at the row's ends.
+        List<View> pills = new ArrayList<>(Arrays.asList(btnInputs, btnWifi, btnVpn, btnReorder, btnLibraryTop, btnSettings));
+        pills.addAll(topAppButtons);
+        for (View button : pills) Focus.attach(button, advancedEffects, reducedMotion || !animations, pillKeys);
         if (festive) applyFestiveSkin((TextView) btnInputs, (TextView) btnSettings);
 
         // Hide the glass when focus leaves the tiles.
         getWindow().getDecorView().getViewTreeObserver().addOnGlobalFocusChangeListener((oldF, newF) -> {
             boolean onTile = newF != null && newF.getId() == R.id.card;
             if (!onTile) hideGlass();
+            // The context line names a top button by its label (icon-only buttons keep it as their description).
+            if (newF != null && newF.getParent() == topButtonsView) {
+                CharSequence name = newF.getContentDescription();
+                if ((name == null || name.length() == 0) && newF instanceof TextView) name = ((TextView) newF).getText();
+                showContext(name);
+            }
         });
 
         packageFilter.addAction(Intent.ACTION_PACKAGE_ADDED);
@@ -1091,6 +1204,19 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             return;
         }
         restartIdleClock();
+        armHideRows();
+        armIdleDim();
+        if (cameBack) {
+            cameBack = false;
+            arrive();
+        }
+        if (couchMenus) root.postDelayed(this::firstRunTips, 1500L);
+        if (sceneView != null) {
+            sceneView.followTime();     // evening came, or fog: the scene that goes with it
+            sceneView.ensureLoaded();   // dropped by onTrimMemory
+            sceneView.refresh();
+        }
+        if (keepWatching != null) keepWatching.refresh();
         promptsPaused = false;
         if (grid.getAdapter() == null) grid.setAdapter(adapter);   // dropped by onTrimMemory
         switch (tileRefresh.onResume(packagesChangedSinceRebuild())) {
@@ -1124,6 +1250,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             pillsShown = true;
         }
         if (showStats) startStats();
+        startWeather();
         if (gameDay != null) gameDay.start();
         sky.update();
         wallpaperPlayer.start();
@@ -1285,6 +1412,187 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         restartIdleClock();
     }
 
+    private void hideRowsNow() {
+        if (!resumed || reordering || openPopup != null || appLibrary != null || cardPrompt != null) {
+            armHideRows();   // something is open: look again later
+            return;
+        }
+        rowsHidden = true;
+        hideGlass();
+        rowsWrap.animate().alpha(0f).setDuration(500).start();
+        topButtonsView.animate().alpha(0f).setDuration(500).start();
+    }
+
+    /** Builds the context line; it lines up with the dock band's right edge once that is known (alignContext). */
+    private void setUpContextLine() {
+        contextLine = new TextView(this);
+        contextLine.setTextColor(getColor(R.color.text_primary));
+        contextLine.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, getResources().getDimension(R.dimen.type_label));
+        contextLine.setShadowLayer(8 * density, 0, density, getColor(R.color.text_shadow));
+        contextLine.setSingleLine(true);
+        contextLine.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        contextLine.setMaxWidth(Math.round(620 * density));
+        try {
+            contextLine.setTypeface(getResources().getFont(R.font.outfit_medium));
+        } catch (RuntimeException ignored) {
+        }
+        contextLine.setAlpha(0f);
+        contextLine.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+        contextLine.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.gravity = Gravity.TOP | Gravity.START;
+        root.addView(contextLine, lp);
+    }
+
+    /** The dock band's edges, in the grid's coordinates, for placeContext. */
+    private void alignContext(float bandLeftInGrid, float bandRightInGrid) {
+        contextBandLeft = bandLeftInGrid;
+        contextBandRight = bandRightInGrid;
+        if (contextLine != null && contextLine.getMeasuredWidth() > 0) placeContext();
+    }
+
+    /**
+     * Right-aligned to the dock band's right edge, on the Keep watching heading's line, just above the cards; with no
+     * cards, just above the dock band. Placed each time it changes, so a late layout never leaves it behind.
+     */
+    private void placeContext() {
+        if (contextLine == null || contextBandRight < 0 || grid.getHeight() == 0) return;
+        if (contextLine.getMeasuredWidth() == 0) contextLine.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+        int[] g = new int[2], r = new int[2];
+        grid.getLocationInWindow(g);
+        root.getLocationInWindow(r);
+        int h = contextLine.getMeasuredHeight();
+        float y;
+        View heading = keepWatching != null && keepWatching.shown() ? keepWatching.heading() : null;
+        if (heading != null) {
+            int[] hd = new int[2];
+            heading.getLocationInWindow(hd);
+            y = hd[1] - r[1] + (heading.getHeight() - h) / 2f;
+        } else {
+            y = g[1] - r[1] + grid.getPaddingTop() - h - 16 * density;
+        }
+        contextLine.setTranslationX(g[0] - r[0] + contextBandRight - contextLine.getMeasuredWidth() - 6 * density);
+        contextLine.setTranslationY(y);
+    }
+
+    /** Fades the new text in; an empty one fades the line out. Same text: nothing happens. */
+    private void showContext(CharSequence what) {
+        if (contextLine == null) return;
+        String text = what == null ? "" : what.toString();
+        if (text.equals(contextShown)) return;
+        contextShown = text;
+        contextLine.animate().cancel();
+        if (text.isEmpty()) {
+            contextLine.animate().alpha(0f).setDuration(Motion.FAST).start();
+            return;
+        }
+        contextLine.setText(text);
+        // Placed now and again after the next layout: on a cold start focus arrives before the rows have their places.
+        contextLine.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+        placeContext();
+        contextLine.post(this::placeContext);
+        if (reducedMotion || !animations) {
+            contextLine.setAlpha(1f);
+            return;
+        }
+        contextLine.setAlpha(0f);
+        contextLine.animate().alpha(1f).setDuration(Motion.STANDARD).setInterpolator(Motion.ENTER).start();
+    }
+
+    /**
+     * The first time Home shows (design/REVAMP-PLAN.md 3.6): three one-line tips on the context line, five seconds
+     * each, then never again. A key press on the way does not stop them; focus changes simply take the line over.
+     */
+    private void firstRunTips() {
+        SharedPreferences prefs = getSharedPreferences("revamp", MODE_PRIVATE);
+        if (!resumed || contextLine == null || prefs.getBoolean("tips_shown", false)) return;
+        prefs.edit().putBoolean("tips_shown", true).apply();
+        int[] tips = {R.string.tip_move, R.string.tip_up, R.string.tip_gear};
+        for (int i = 0; i < tips.length; i++) {
+            final int tip = tips[i];
+            root.postDelayed(() -> {
+                if (resumed) showContext(getString(tip));
+            }, i * 5000L);
+        }
+        root.postDelayed(() -> {   // back to naming what has focus
+            if (!resumed) return;
+            int tile = focusedTilePosition();
+            showContext(tile >= 0 ? adapter.labelAt(tile) : "");
+        }, tips.length * 5000L);
+    }
+
+    /** Home left for an app: the next return plays the arrival. */
+    private boolean cameBack;
+
+    /**
+     * Back on Home from an app (design/REVAMP-PLAN.md 3.3): the top buttons, then the cards, then the dock fade in,
+     * 40 ms apart. Opacity only, each view drawn into a layer while it fades, so it costs a few cheap frames.
+     */
+    private void arrive() {
+        if (!animations || reducedMotion) return;
+        View[] views = {topButtonsView, keepWatching != null && keepWatching.shown() ? findViewById(R.id.watchBlock) : null, grid, glass};
+        for (int i = 0; i < views.length; i++) {
+            View v = views[i];
+            if (v == null || v.getVisibility() != View.VISIBLE) continue;
+            float to = v == glass ? (glassShown ? 1f : 0f) : 1f;
+            if (to == 0f) continue;
+            v.setAlpha(0f);
+            v.animate().alpha(to).setStartDelay(Math.min(i, 2) * 40L).setDuration(Motion.STANDARD)
+                    .setInterpolator(Motion.ENTER).withLayer().withEndAction(() -> v.animate().setStartDelay(0)).start();
+        }
+    }
+
+    private void armIdleDim() {
+        root.removeCallbacks(idleDim);
+        if (resumed && animations) root.postDelayed(idleDim, IDLE_DIM_MS);
+    }
+
+    /** Everything focusable on Home but the focused control, to IDLE_DIM_ALPHA; the focused one stays as it is. */
+    private void idleDimNow() {
+        if (!resumed || reordering || openPopup != null || appLibrary != null || cardPrompt != null || rowsHidden) {
+            armIdleDim();
+            return;
+        }
+        idleDimmed = true;
+        for (View v : idleTargets()) {
+            if (!v.hasFocus() && v.getAlpha() > IDLE_DIM_ALPHA) {
+                v.animate().alpha(IDLE_DIM_ALPHA).setDuration(Motion.SLOW * 2).setInterpolator(Motion.MOVE).start();
+            }
+        }
+    }
+
+    private void idleUndim() {
+        idleDimmed = false;
+        for (View v : idleTargets()) {
+            float to = v.getParent() == grid ? tileAlpha(grid.getChildAdapterPosition(v)) : 1f;
+            v.animate().alpha(to).setDuration(reducedMotion ? Motion.REDUCED_MS : Motion.FAST).setInterpolator(Motion.ENTER).start();
+        }
+    }
+
+    /** The grid's tiles, the Keep watching cards and the top buttons: what the inactivity dim fades. */
+    private List<View> idleTargets() {
+        List<View> out = new ArrayList<>();
+        for (int i = 0; i < grid.getChildCount(); i++) out.add(grid.getChildAt(i));
+        if (keepWatching != null) out.addAll(keepWatching.cards());
+        for (int i = 0; i < ((ViewGroup) topButtonsView).getChildCount(); i++) out.add(((ViewGroup) topButtonsView).getChildAt(i));
+        return out;
+    }
+
+    private void armHideRows() {
+        root.removeCallbacks(hideRows);
+        if (hideRowsMs > 0 && resumed) root.postDelayed(hideRows, hideRowsMs);
+    }
+
+    private void showRows() {
+        rowsHidden = false;
+        rowsWrap.animate().alpha(1f).setDuration(150).start();
+        topButtonsView.animate().alpha(1f).setDuration(150).start();
+        View focused = getCurrentFocus();
+        int tile = focusedTilePosition();
+        if (focused != null && tile >= 0) onTileFocused(tile, focused);   // the dock's highlight comes back with it
+        armHideRows();
+    }
+
     private void restartIdleClock() {
         root.removeCallbacks(showIdleClock);
         if (resumed && idleClockMs > 0) root.postDelayed(showIdleClock, idleClockMs);
@@ -1299,8 +1607,17 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         RemoteKeys.release(this);
         cancelHoldOk();
         root.removeCallbacks(showIdleClock);
+        root.removeCallbacks(hideRows);
+        root.removeCallbacks(idleDim);
+        if (idleDimmed) idleUndim();
+        if (rowsHidden) {   // leaving Home: it comes back with its rows
+            rowsHidden = false;
+            rowsWrap.setAlpha(1f);
+            topButtonsView.setAlpha(1f);
+        }
         endReorder();   // Home or another app while reordering keeps the order so far
         wallpaperPlayer.stop();
+        if (sceneView != null) sceneView.pause();
         stopAmbientAnimation();
         hero.animate().cancel();
         ambient.animate().cancel();
@@ -1309,6 +1626,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         handler.removeCallbacks(openWhenOnline);
         startPending = null;   // leaving Home before the network came back: the boot's app stays closed
         stopStats();
+        handler.removeCallbacks(weatherTick);   // no network use while Home is not on screen
         if (gameDay != null) gameDay.stop();
         handler.removeCallbacks(turnTick);
         if (lamp != null) lamp.stop();
@@ -1323,6 +1641,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     protected void onStop() {
         super.onStop();
         started = false;
+        cameBack = true;
         unregisterReceiver(timeReceiver);
         handler.removeCallbacks(clockCheck);
         stopped = true;
@@ -1348,6 +1667,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         heroArtCache.clear();
         heroArtKey = null;
         wallpaperPlayer.releaseForMemoryPressure();
+        if (sceneView != null) sceneView.release();
+        if (keepWatching != null) keepWatching.release();
         tileRefresh.invalidate();
     }
 
@@ -1418,7 +1739,23 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // taken after that would arm one nothing releases.
         if (resumed && event.getKeyCode() >= 1000 && RemoteKeys.handle(this, event, homeAppKeys.get(event.getKeyCode()),
                 homeHoldAppKeys.get(event.getKeyCode()))) return true;
+        if (event.getAction() == KeyEvent.ACTION_DOWN) {
+            if (idleDimmed) idleUndim();
+            armIdleDim();
+        }
         if (handleSettingsKey(event)) return true;
+        if (hideRowsMs > 0 && event.getKeyCode() < 1000) {
+            if (swallowKey == event.getKeyCode() && event.getAction() == KeyEvent.ACTION_UP) {
+                swallowKey = 0;
+                return true;
+            }
+            if (rowsHidden) {   // the first press only wakes the rows; it must not open what is focused
+                swallowKey = event.getKeyCode();
+                if (event.getAction() == KeyEvent.ACTION_DOWN) showRows();
+                return true;
+            }
+            armHideRows();
+        }
         if (holdOk(event)) return true;
         if (tileMenuEnabled && !reordering && openPopup == null && cardPrompt == null
                 && event.getKeyCode() == KeyEvent.KEYCODE_MENU) {
@@ -1787,6 +2124,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     @Override
     public void onTileFocused(int position, View card) {
+        showContext(adapter.labelAt(position));
         lastFocused = position;
         lastFocusedKey = adapter.keyAt(position);
         // Focus restored before the first layout (cold start): the tile has no size yet, and the glass
@@ -2232,6 +2570,43 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         else glass.setAlpha(0f);
     }
 
+    // ---- Weather line under the clock (Weather.java) -----------------------------
+
+    /** Shows the saved reading at once, then fetches a new one when it is older than 30 minutes. */
+    private void startWeather() {
+        if (!weatherOn) return;
+        Weather.Reading r = Weather.cached(this);
+        showWeather(r);
+        handler.removeCallbacks(weatherTick);
+        long age = r == null ? Long.MAX_VALUE : Math.max(0, System.currentTimeMillis() - r.at);
+        handler.postDelayed(weatherTick, age >= WEATHER_REFRESH_MS ? 0 : WEATHER_REFRESH_MS - age);
+    }
+
+    private void refreshWeather() {
+        if (!weatherOn || weatherBusy) return;
+        weatherBusy = true;
+        final String lat = weatherLat, lon = weatherLon;
+        new Thread(() -> {
+            Weather.Reading r = Weather.fetch(getApplicationContext(), lat, lon);
+            handler.post(() -> {
+                weatherBusy = false;
+                if (r != null) showWeather(r);
+                handler.removeCallbacks(weatherTick);
+                if (!isFinishing()) handler.postDelayed(weatherTick, r != null ? WEATHER_REFRESH_MS : WEATHER_RETRY_MS);
+            });
+        }, "weather").start();
+    }
+
+    private void showWeather(Weather.Reading r) {
+        if (r == null || weather == null) return;
+        if (sceneView != null) {
+            sceneView.setWeather(Weather.line(weatherPlace, r));
+            return;
+        }
+        weather.setText(Weather.line(weatherPlace, r));
+        weather.setVisibility(View.VISIBLE);
+    }
+
     // ---- optional system stats (config.xml show_stats) --------------------------------------------
 
     /** Background reader. Started only while Home is resumed and show_stats is on. */
@@ -2439,8 +2814,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             }
             // In the dock, the last app is the row's end: the empty slots after it take no focus.
             int rowCount = position < COLUMNS ? Math.min(count, adapter.dockFilled()) : count;
-            return GridNavigation.atHorizontalEdge(position, rowCount, COLUMNS,
+            boolean edge = GridNavigation.atHorizontalEdge(position, rowCount, COLUMNS,
                     rtlAppGrid, keyCode == KeyEvent.KEYCODE_DPAD_LEFT);
+            if (edge) nudgeTile(position, keyCode);
+            return edge;
         }
         if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
             if (position < COLUMNS) return false;          // dock row: let focus move to the top bar
@@ -2458,6 +2835,19 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         grid.playSoundEffect(keyCode == KeyEvent.KEYCODE_DPAD_UP
                 ? SoundEffectConstants.NAVIGATION_UP : SoundEffectConstants.NAVIGATION_DOWN);
         return true;
+    }
+
+    /** The end of a row: the tile and the glass on it push a little towards the key and come back. */
+    private void nudgeTile(int position, int keyCode) {
+        if (reducedMotion || !animations) return;
+        RecyclerView.ViewHolder vh = grid.findViewHolderForAdapterPosition(position);
+        if (vh == null) return;
+        Focus.nudge(vh.itemView, keyCode, false);
+        if (!glassShown) return;
+        float d = Motion.NUDGE_DP * density * (keyCode == KeyEvent.KEYCODE_DPAD_LEFT ? -1 : 1);
+        float target = glassTargetX - glassScrollShiftX;
+        springX.animateToFinalPosition(target + d);
+        root.postDelayed(() -> springX.animateToFinalPosition(glassTargetX - glassScrollShiftX), Motion.FAST / 2);
     }
 
     @Override public void onLibraryFocused() {
@@ -2692,7 +3082,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     private void updateClockVisibility() {
         boolean valid = System.currentTimeMillis() >= TIME_VALID_AFTER_MS;
-        clockBlock.setVisibility(valid ? View.VISIBLE : View.INVISIBLE);
+        clockBlock.setVisibility(valid && sceneView == null ? View.VISIBLE : View.INVISIBLE);   // the scene draws its own clock
         handler.removeCallbacks(clockCheck);
         if (valid) {
             updateGreeting();
@@ -3564,6 +3954,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             final Intent liveTvIntent = liveTv;
             addInputRow(rows, popup, R.drawable.ic_livetv, getString(R.string.live_tv), -1, () -> open(liveTvIntent));
         }
+        if (couchMenus) {
+            // As in couch-tv: the TV's inputs, then the two settings people look for from here.
+            if (rows.getChildCount() > 0) addSeparator(rows);
+            addInputRow(rows, popup, R.drawable.ic_bluetooth, getString(R.string.inputs_bluetooth), -1,
+                    () -> open(systemIntent(Settings.ACTION_BLUETOOTH_SETTINGS)));
+            addInputRow(rows, popup, R.drawable.ic_wifi, getString(R.string.inputs_network), -1,
+                    () -> open(systemIntent(Settings.ACTION_WIFI_SETTINGS)));
+        }
         if (rows.getChildCount() == 0) {
             Toast.makeText(this, R.string.no_inputs, Toast.LENGTH_SHORT).show();
             return;
@@ -3605,16 +4003,52 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         panel.setPivotY(0f);
         panel.setScaleY(0.92f);
         panel.setTranslationY(-8 * density);
-        popup.showAsDropDown(anchor, 0, (int) (10 * density), gravity);
+        // Keep the window inside the screen margins (the pill row's 56dp right margin). A list
+        // wider than its pill used to run off the screen's right edge when it hung from the pill's left edge.
+        int xoff = 0;
+        int w = popup.getWidth();
+        if (w > 0) {
+            int[] at = new int[2];
+            anchor.getLocationOnScreen(at);
+            int margin = (int) (56 * density), screen = getResources().getDisplayMetrics().widthPixels;
+            if (gravity == Gravity.END) {
+                int left = at[0] + anchor.getWidth() - w;
+                if (left < margin) xoff = margin - left;
+            } else {
+                int right = at[0] + w;
+                if (right > screen - margin) xoff = (screen - margin) - right;
+            }
+        }
+        popup.showAsDropDown(anchor, xoff, (int) (6 * density), gravity);
+        dimBehind(popup, 0.40f);
         panel.animate().alpha(1f).scaleY(1f).translationY(0f).setDuration(reducedMotion ? Motion.REDUCED_MS : 220)
                 .setInterpolator(new android.view.animation.DecelerateInterpolator(1.6f)).start();
+    }
+
+    /**
+     * Dims Home a little behind an open window, so a list taller than the room above the dock reads
+     * as a layer over Home, not a box colliding with the dock. One compositor flag, no per-frame cost.
+     */
+    private void dimBehind(PopupWindow popup, float amount) {
+        try {
+            View decor = popup.getContentView().getRootView();
+            ViewGroup.LayoutParams p = decor.getLayoutParams();
+            if (p instanceof android.view.WindowManager.LayoutParams) {
+                android.view.WindowManager.LayoutParams lp = (android.view.WindowManager.LayoutParams) p;
+                lp.flags |= android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND;
+                lp.dimAmount = amount;
+                ((android.view.WindowManager) getSystemService(WINDOW_SERVICE)).updateViewLayout(decor, lp);
+            }
+        } catch (Exception ignored) {
+            // No dim: the window still works.
+        }
     }
 
     private View addSeparator(LinearLayout rows) {
         View line = new View(this);
         line.setBackgroundColor(0x1FFFFFFF);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) density);
-        int m = (int) (6 * density), h = (int) (12 * density);
+        int m = (int) (3 * density), h = (int) (12 * density);
         lp.setMargins(h, m, h, m);
         rows.addView(line, lp);
         return line;
@@ -3642,6 +4076,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             popup.dismiss();
             action.run();
         });
+        Focus.attach(row, false, reducedMotion || !animations);
         rows.addView(row);
         return row;
     }
@@ -3675,6 +4110,36 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         popup.setWidth(Math.max((int) (220 * density), Math.min(panel.getMeasuredWidth(), (int) (360 * density))));
         dropIn(popup, panel, anchor, getResources().getBoolean(R.bool.rtl_menu_bar) ? Gravity.START : Gravity.END);
         rows.getChildAt(0).requestFocus();
+    }
+
+    /** couch_menus: the gear's menu, Home settings (this launcher's) and TV settings (Android's), as in couch-tv. */
+    private void showGearMenu() {
+        View anchor = findViewById(R.id.btnSettings);
+        View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
+        LinearLayout rows = panel.findViewById(R.id.rows);
+        PopupWindow popup = glassPopup(panel, (int) (320 * density));
+        addGearRow(rows, popup, R.drawable.ic_home_settings_pill, getString(R.string.gear_home),
+                getString(R.string.gear_home_note),
+                () -> startActivityForResult(new Intent(this, CouchSettingsActivity.class), LAUNCHER_SETTINGS_REQUEST));
+        addGearRow(rows, popup, R.drawable.ic_settings, getString(R.string.gear_tv),
+                getString(R.string.gear_tv_note), () -> open(systemIntent(Settings.ACTION_SETTINGS)));
+        panel.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+        popup.setWidth(Math.max((int) (320 * density), Math.min(panel.getMeasuredWidth(), (int) (420 * density))));
+        dropIn(popup, panel, anchor, getResources().getBoolean(R.bool.rtl_menu_bar) ? Gravity.START : Gravity.END);
+        rows.getChildAt(0).requestFocus();
+    }
+
+    private void addGearRow(LinearLayout rows, PopupWindow popup, int iconRes, String title, String subtitle, Runnable action) {
+        View row = getLayoutInflater().inflate(R.layout.item_gear_row, rows, false);
+        ((ImageView) row.findViewById(R.id.icon)).setImageResource(iconRes);
+        ((TextView) row.findViewById(R.id.title)).setText(title);
+        ((TextView) row.findViewById(R.id.subtitle)).setText(subtitle);
+        row.setOnClickListener(v -> {
+            popup.dismiss();
+            action.run();
+        });
+        Focus.attach(row, false, reducedMotion || !animations);
+        rows.addView(row);
     }
 
     /** The header opens launcher settings directly; hold OK keeps the extra home actions available. */

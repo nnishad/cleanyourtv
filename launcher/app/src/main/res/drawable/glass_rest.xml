@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Glass at rest (tokens.xml): faint dark base, white fading down, a thin rim. Tiles, cards, buttons and rows. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/glass_base" />
+            <corners android:radius="@dimen/radius_m" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient android:angle="270" android:startColor="@color/glass_rest_top" android:endColor="@color/glass_rest_bottom" />
+            <stroke android:width="1dp" android:color="@color/glass_rest_rim" />
+            <corners android:radius="@dimen/radius_m" />
+        </shape>
+    </item>
+</layer-list>
