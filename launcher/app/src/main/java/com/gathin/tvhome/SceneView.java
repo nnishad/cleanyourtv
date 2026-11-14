@@ -71,11 +71,11 @@ final class SceneView extends View {
             new Spec("night", true, 150, 400, -1, 1.15f, 1.2f, 0.9f, 0.86f, 0x80FFD7E1, 0x0FFFC8D7, true, null, null),
             // Golden hour: a little smaller, low enough for the volcano's tip to rise into the digits
             new Spec("golden", true, 152, 390, -1, 1f, 1f, 1f, 1f, WHITE_RIM, WHITE_FILL, true, null, null),
-            // Waterline: the clock sits on the water; no cut-out
-            new Spec("water", false, 268, 420, -1, 1f, 1f, 1f, 1f, WHITE_RIM, WHITE_FILL, true,
+            // Waterline: the clock sits on the water, clear of the Keep watching row; no cut-out
+            new Spec("water", false, 200, 420, -1, 1f, 1f, 1f, 1f, WHITE_RIM, WHITE_FILL, true,
                     new int[]{0x6B000C18, 0x1F000C18, 0x00000000, 0x80001428}, new float[]{0f, 0.40f, 0.52f, 1f}),
-            // Fog: a big dark clock on the left, sinking into the misty hills
-            new Spec("fog", true, 172, 470, 96, 0.46f, 0.8f, 0.8f, 1f, 0x99FFFFFF, 0, false,
+            // Fog: a big dark clock on the left, its digits on the rows' left edge, sinking into the misty hills
+            new Spec("fog", true, 172, 470, 68, 0.46f, 0.8f, 0.8f, 1f, 0x99FFFFFF, 0, false,
                     new int[]{0x66000000, 0x00000000}, new float[]{0f, 0.24f}),   // the top buttons are white on a pale sky
             // Rainforest dawn: warm light at the top, the clock low enough for the ridges to cross it
             new Spec("dawn", true, 230, 400, -1, 1f, 1f, 1f, 1f, WHITE_RIM, WHITE_FILL, true,
@@ -356,11 +356,9 @@ final class SceneView extends View {
         if (spec.left < 0) {
             caption.setTextAlign(Paint.Align.CENTER);
             c.drawText(line, getWidth() / 2f, base, caption);
-        } else {   // a clock set to one side: start the line where the digits visibly start
-            fill.setTextSize(spec.size * s);
-            fill.getTextBounds(time, 0, time.length(), digits);
+        } else {   // a clock set to one side: the line starts where its digits do
             caption.setTextAlign(Paint.Align.LEFT);
-            c.drawText(line, spec.left * s + digits.left, base, caption);
+            c.drawText(line, spec.left * s, base, caption);
         }
     }
 
@@ -375,7 +373,13 @@ final class SceneView extends View {
             fill.setShader(glassShader);
         }
         float tw = fill.measureText(time);
-        float x = spec.left < 0 ? (w - tw) / 2f : spec.left * s;
+        float x;
+        if (spec.left < 0) {
+            x = (w - tw) / 2f;
+        } else {   // "left" is where the digits visibly start, not the glyph's side bearing
+            fill.getTextBounds(time, 0, time.length(), digits);
+            x = spec.left * s - digits.left;
+        }
         float lineHeight = 0.82f * size;
         Paint.FontMetrics fm = fill.getFontMetrics();
         float base = spec.top * s + lineHeight / 2f - (fm.ascent + fm.descent) / 2f;   // a CSS line box centres its text
