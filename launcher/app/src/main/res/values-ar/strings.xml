@@ -223,4 +223,9 @@
     <string name="hs_place_not_found">لم يُعثر على مكان. تحقق من الإملاء.</string>
     <string name="hs_place_offline">تعذّر البحث. تحقق من الشبكة.</string>
     <string name="hs_place_forget">حذف المكان</string>
+    <string name="hs_weather_tv_note">يستخدم الموقع الذي يحدده التلفزيون، ويبقى ذلك على التلفزيون. تأتي التوقعات من Open-Meteo</string>
+    <string name="hs_place_tv">موقع التلفزيون</string>
+    <string name="hs_allow_location">السماح بالوصول إلى الموقع</string>
+    <string name="hs_allow_location_note">ليستخدم الطقس موقع التلفزيون. أو اختر مدينة ضمن مكان</string>
+    <string name="hs_location_none">لم يحدد التلفزيون موقعًا. شغّل إعداد الموقع فيه، أو اكتب أقرب مدينة</string>
 </resources>

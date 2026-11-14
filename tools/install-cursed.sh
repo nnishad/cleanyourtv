@@ -189,7 +189,10 @@ trap 'rm -f "$LOG"' EXIT
 # The upload prints one "chunk n/567" per piece on a single line; show it as one word.
 launcher/build-and-install.sh 2>&1 | tee "$LOG" | sed -E 's/(chunk [0-9]+\/[0-9]+)+/uploading.../'
 STOCK="$(sed -n 's/^Stock launcher: //p' "$LOG" | tail -n 1 | tr -d '\r')"
-"$PY" -I tools/tv.py 'pm grant com.gathin.tvhome android.permission.READ_TV_LISTINGS; echo granted' >/dev/null 2>&1 || true   # Keep watching
+# Keep watching reads the Watch Next list; the weather may ask the TV where it is (build-and-install already granted the
+# precise location, which is also what reads the Wi-Fi name; this adds the coarse one Android 12 wants beside it).
+"$PY" -I tools/tv.py 'pm grant com.gathin.tvhome android.permission.READ_TV_LISTINGS; pm grant com.gathin.tvhome android.permission.ACCESS_COARSE_LOCATION; echo granted' >/dev/null 2>&1 || true
+LOCATION_MODE="$("$PY" -I tools/tv.py 'settings get secure location_mode' 2>/dev/null | tail -n 1 | tr -d '\r' || true)"
 
 step "5/5  The Cursed theme"
 tools/theme.sh themes/cursed
@@ -197,7 +200,8 @@ tools/theme.sh themes/cursed
 cat <<EOF
 
 Done. The TV now opens the Cursed home screen. Press the gear for Home settings: backgrounds, rows, the dock grid, and
-Weather > Place, where you type your city to show the weather beside the date.
+Weather > Place, where you can type a city. Until you do, the weather beside the date uses where the TV says it is.
+$( [ "${LOCATION_MODE:-}" = 0 ] && printf '\nThe TV'"'"'s Location setting is off, so it cannot say where it is: switch it on (Settings > Device Preferences >\nLocation), or type a city in Home settings > Weather > Place.\n' )
 
 Before you leave it: switch USB and Network/Wireless debugging off in the TV's Developer options. While it is on, anyone
 on your Wi-Fi can control the TV. Then check from here:  $PY -I tools/adb-closed.py $TV_HOST

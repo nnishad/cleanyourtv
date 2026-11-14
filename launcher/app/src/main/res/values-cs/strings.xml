@@ -228,4 +228,9 @@
     <string name="hs_place_not_found">Místo nenalezeno. Zkontrolujte pravopis.</string>
     <string name="hs_place_offline">Hledání se nezdařilo. Zkontrolujte síť.</string>
     <string name="hs_place_forget">Zapomenout místo</string>
+    <string name="hs_weather_tv_note">Používá polohu, kterou televizor sám zjistí; ta zůstává v televizoru. Předpověď pochází z Open-Meteo</string>
+    <string name="hs_place_tv">Poloha televizoru</string>
+    <string name="hs_allow_location">Povolit přístup k poloze</string>
+    <string name="hs_allow_location_note">Aby počasí používalo polohu televizoru. Nebo vyberte město v části Místo</string>
+    <string name="hs_location_none">Televizor neposkytl polohu. Zapněte jeho nastavení Poloha nebo zadejte nejbližší město</string>
 </resources>

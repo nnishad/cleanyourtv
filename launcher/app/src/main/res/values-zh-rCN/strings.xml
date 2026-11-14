@@ -267,4 +267,9 @@
     <string name="hs_place_not_found">未找到地点。请检查拼写。</string>
     <string name="hs_place_offline">无法搜索。请检查网络。</string>
     <string name="hs_place_forget">忘记地点</string>
+    <string name="hs_weather_tv_note">使用电视自行判断的位置，该信息只保留在电视上。预报来自 Open-Meteo</string>
+    <string name="hs_place_tv">电视位置</string>
+    <string name="hs_allow_location">允许访问位置信息</string>
+    <string name="hs_allow_location_note">让天气使用电视所在位置。也可以在“地点”中选择城市</string>
+    <string name="hs_location_none">电视没有提供位置。请开启其“位置信息”设置，或输入离你最近的城市</string>
 </resources>

@@ -221,4 +221,9 @@
     <string name="hs_place_not_found">Nie znaleziono miejsca. Sprawdź pisownię.</string>
     <string name="hs_place_offline">Nie udało się wyszukać. Sprawdź sieć.</string>
     <string name="hs_place_forget">Zapomnij miejsce</string>
+    <string name="hs_weather_tv_note">Używa lokalizacji ustalonej przez telewizor; zostaje ona w telewizorze. Prognoza pochodzi z Open-Meteo</string>
+    <string name="hs_place_tv">Lokalizacja telewizora</string>
+    <string name="hs_allow_location">Zezwól na dostęp do lokalizacji</string>
+    <string name="hs_allow_location_note">Aby pogoda używała lokalizacji telewizora. Lub wybierz miasto w polu Miejsce</string>
+    <string name="hs_location_none">Telewizor nie podał lokalizacji. Włącz jego ustawienie Lokalizacja lub wpisz najbliższe miasto</string>
 </resources>

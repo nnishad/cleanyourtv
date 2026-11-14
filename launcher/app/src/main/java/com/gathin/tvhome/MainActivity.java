@@ -200,6 +200,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private TextView weather;
     private boolean weatherOn, weatherBusy;
     private String weatherPlace = "", weatherLat = "", weatherLon = "";
+    /** No city chosen or in config.xml, the theme says weather_auto, and the TV may be asked where it is. */
+    private boolean weatherAuto;
     private static final long WEATHER_REFRESH_MS = 30 * 60 * 1000L, WEATHER_RETRY_MS = 5 * 60 * 1000L;
     private final Runnable weatherTick = this::refreshWeather;
     /** Couch-tv port (Config.scenes): the scene behind Home, drawn natively; null when the theme does not ask for it. */
@@ -697,8 +699,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         weatherPlace = where != null ? where.name : "";
         weatherLat = where != null ? where.lat : "";
         weatherLon = where != null ? where.lon : "";
-        weatherOn = where != null && getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE)
-                .getBoolean("show_weather", WeatherPlace.onByDefault(this));
+        weatherAuto = where == null && cfg.weatherAuto && TvLocation.allowed(this);
+        weatherOn = (where != null || weatherAuto) && getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE)
+                .getBoolean("show_weather", weatherAuto || WeatherPlace.onByDefault(this));
         raceCalendar = cfg.raceCalendar;
         racePanel = findViewById(R.id.racePanel);
         raceKicker = findViewById(R.id.raceKicker);
@@ -2728,9 +2731,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private void refreshWeather() {
         if (!weatherOn || weatherBusy) return;
         weatherBusy = true;
-        final String lat = weatherLat, lon = weatherLon;
+        final String fixedLat = weatherLat, fixedLon = weatherLon;
+        final boolean auto = weatherAuto;
         new Thread(() -> {
-            Weather.Reading r = Weather.fetch(getApplicationContext(), lat, lon);
+            String lat = fixedLat, lon = fixedLon;
+            if (auto) {   // nobody chose a city: where the TV says it is
+                TvLocation.Fix fix = TvLocation.resolve(getApplicationContext());
+                lat = fix != null ? fix.lat : "";
+                lon = fix != null ? fix.lon : "";
+            }
+            Weather.Reading r = lat.isEmpty() ? null : Weather.fetch(getApplicationContext(), lat, lon);
             handler.post(() -> {
                 weatherBusy = false;
                 if (r != null) showWeather(r);

@@ -238,4 +238,9 @@
     <string name="hs_place_not_found">Nun s\'atopó nengún llugar. Revisa l\'ortografía.</string>
     <string name="hs_place_offline">Nun se pudo buscar. Revisa la rede.</string>
     <string name="hs_place_forget">Escaecer el llugar</string>
+    <string name="hs_weather_tv_note">Usa u diz el televisor que ta; ye queda nel televisor. El pronósticu vien d\'Open-Meteo</string>
+    <string name="hs_place_tv">Allugamientu del TV</string>
+    <string name="hs_allow_location">Permitir l\'accesu a l\'allugamientu</string>
+    <string name="hs_allow_location_note">Pa que\'l tiempu use u ta el TV. O escueyi una ciudá en Llugar</string>
+    <string name="hs_location_none">El TV nun dio l\'allugamientu. Activa\'l so axuste Allugamientu, o escribi la ciudá más cercana</string>
 </resources>

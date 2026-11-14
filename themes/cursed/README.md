@@ -76,12 +76,18 @@ covers this computer's own network (the /24 around its address); for a bigger or
 `--subnet 192.168.1.0/24`. `--yes` skips the final question, for a script or an assistant that has already asked you.
 Run without a keyboard (no terminal to answer on) and without `--yes`, it refuses to change anything.
 
-**Weather** beside the date ("☽ 23° Clear"). Off until you choose a place, and the launcher makes no network request at
-all while it is off. On the TV: **Home settings > Weather > Place**, press OK, type your nearest city with the TV's
-keyboard, press Search, and pick the right one from the list (places with the same name are told apart by region and
-country). The weather switches on. What you type goes to Open-Meteo (free, no account) once to find the place, and then the place's
-coordinates go to it for the forecast every 30 minutes while Home is on screen; nothing else is sent. "Forget the place" on the same screen takes it away; the
-switch above it turns the weather off and keeps the place.
+**Weather** beside the date ("☁ 4° Overcast"). With nothing set up it uses **where the TV says it is**: Android works a
+position out from the Wi-Fi networks around the TV when the TV's **Location** setting is on (Settings > Device
+Preferences > Location). The installer has already given the launcher the permission; if it is missing, **Home settings >
+Weather > Allow access to location** asks for it. The position is worked out on the TV and kept for a week. Many TVs
+have Location switched off, or never give a position; then Home settings > Weather says so, and the weather waits.
+
+To choose the place yourself, which then wins: **Home settings > Weather > Place**, press OK, type your nearest city with
+the TV's keyboard, press Search, and pick the right one from the list (places with the same name are told apart by
+region and country). What you type goes to Open-Meteo (free, no account) once, to find the place. Either way the
+place's coordinates (rounded to a kilometre) go to Open-Meteo for the forecast every 30 minutes while Home is on screen,
+and nothing else is sent. "Forget the place" takes your choice away and goes back to the TV's location; the switch above
+turns the weather off altogether, and while it is off the launcher makes no network request.
 
 **Keep watching** is hidden until an app reports something you were part way through; Netflix, YouTube and others do.
 The installer has already given the launcher permission to read that list (and only read it).
@@ -139,7 +145,7 @@ upstream ignores these keys.
 | | Upstream launcher | This branch |
 |---|---|---|
 | APK size | about 0.6 MB | about 28 MB (the photos are stored losslessly) |
-| Permissions | none for network | `INTERNET`, used only by the weather line you switch on (Open-Meteo); `READ_TV_LISTINGS` for Keep watching |
+| Permissions | none for network | `INTERNET`, used only by the weather line (Open-Meteo); location, to put the weather where the TV is (the TV works it out, nothing leaves it but the rounded coordinates, and only for the forecast); `READ_TV_LISTINGS` for Keep watching |
 | Based on | current `main` | upstream as of launcher 3.3 |
 
 This installs the launcher and the look only. To also switch off the TV maker's ads and preloaded apps, follow the
@@ -150,7 +156,7 @@ main [README](../../README.md); the two work together.
 An Android TV 12 emulator at 1920x1080, where the screenshot and the installer were tested. An earlier build of this
 branch ran on an Android TV 11 set with 2 GB of RAM. This build has not been run on a real TV yet, and not measured on
 any: the cross-fades are full-screen blends, which a slow graphics chip may not do smoothly. On a 1 GB set the photos
-may be too heavy. The installer, its search for TVs and its questions were run against that emulator on a Mac (the search found a device on this computer's loopback, not a real TV: the real one was off), and so was choosing a city for the weather. They were not tried on Linux, Windows (WSL), a Docker build or a real TV.
+may be too heavy. The installer, its search for TVs and its questions were run against that emulator on a Mac (the search found a device on this computer's loopback, not a real TV: the real one was off), and so were choosing a city for the weather and the TV-location path (fed a test location in Vilnius: the weather came out as Vilnius's, not the machine's own). Whether a real TV gives a location has not been tried. They were not tried on Linux, Windows (WSL), a Docker build or a real TV.
 
 ## Credits
 

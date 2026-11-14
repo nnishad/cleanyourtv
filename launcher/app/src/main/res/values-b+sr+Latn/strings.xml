@@ -201,4 +201,9 @@
     <string name="hs_place_not_found">Mesto nije pronađeno. Proverite pravopis.</string>
     <string name="hs_place_offline">Pretraga nije uspela. Proverite mrežu.</string>
     <string name="hs_place_forget">Zaboravi mesto</string>
+    <string name="hs_weather_tv_note">Koristi lokaciju koju TV sam utvrdi; ona ostaje na TV-u. Prognoza dolazi iz Open-Meteo</string>
+    <string name="hs_place_tv">Lokacija TV-a</string>
+    <string name="hs_allow_location">Dozvoli pristup lokaciji</string>
+    <string name="hs_allow_location_note">Da vreme koristi lokaciju TV-a. Ili izaberi grad pod Mesto</string>
+    <string name="hs_location_none">TV nije dao lokaciju. Uključi njegovo podešavanje Lokacija ili upiši najbliži grad</string>
 </resources>

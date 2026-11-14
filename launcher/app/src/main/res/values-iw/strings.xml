@@ -268,4 +268,9 @@
     <string name="hs_place_not_found">לא נמצא מקום. בדקו את האיות.</string>
     <string name="hs_place_offline">החיפוש נכשל. בדקו את הרשת.</string>
     <string name="hs_place_forget">שכח את המקום</string>
+    <string name="hs_weather_tv_note">משתמש במיקום שהטלוויזיה קובעת בעצמה; הוא נשאר בטלוויזיה. התחזית מגיעה מ־Open-Meteo</string>
+    <string name="hs_place_tv">מיקום הטלוויזיה</string>
+    <string name="hs_allow_location">מתן גישה למיקום</string>
+    <string name="hs_allow_location_note">כדי שמזג האוויר ישתמש במיקום הטלוויזיה. או בחרו עיר תחת מקום</string>
+    <string name="hs_location_none">הטלוויזיה לא סיפקה מיקום. הפעילו את הגדרת המיקום שלה, או הקלידו את העיר הקרובה אליכם</string>
 </resources>

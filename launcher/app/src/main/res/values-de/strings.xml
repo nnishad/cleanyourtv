@@ -196,4 +196,9 @@
     <string name="hs_place_not_found">Kein Ort gefunden. Prüfe die Schreibweise.</string>
     <string name="hs_place_offline">Suche nicht möglich. Prüfe das Netzwerk.</string>
     <string name="hs_place_forget">Ort entfernen</string>
+    <string name="hs_weather_tv_note">Nutzt den Standort, den der Fernseher selbst bestimmt; er bleibt auf dem Fernseher. Die Vorhersage kommt von Open-Meteo</string>
+    <string name="hs_place_tv">Standort des Fernsehers</string>
+    <string name="hs_allow_location">Zugriff auf den Standort erlauben</string>
+    <string name="hs_allow_location_note">Damit das Wetter den Standort des Fernsehers nutzen kann. Oder wähle unter Ort eine Stadt</string>
+    <string name="hs_location_none">Der Fernseher hat keinen Standort geliefert. Schalte seine Standorteinstellung ein oder gib deine nächste Stadt ein</string>
 </resources>

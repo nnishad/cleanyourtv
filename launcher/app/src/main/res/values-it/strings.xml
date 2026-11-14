@@ -265,4 +265,9 @@
     <string name="hs_place_not_found">Nessun luogo trovato. Controlla l\'ortografia.</string>
     <string name="hs_place_offline">Ricerca non riuscita. Controlla la rete.</string>
     <string name="hs_place_forget">Dimentica il luogo</string>
+    <string name="hs_weather_tv_note">Usa il luogo in cui la TV dice di trovarsi; resta sulla TV. Le previsioni arrivano da Open-Meteo</string>
+    <string name="hs_place_tv">Posizione della TV</string>
+    <string name="hs_allow_location">Consenti l\'accesso alla posizione</string>
+    <string name="hs_allow_location_note">Così il meteo può usare la posizione della TV. Oppure scegli una città in Luogo</string>
+    <string name="hs_location_none">La TV non ha fornito una posizione. Attiva la sua impostazione Posizione o scrivi la città più vicina</string>
 </resources>

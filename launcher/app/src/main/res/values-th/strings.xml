@@ -193,4 +193,9 @@
     <string name="hs_place_not_found">ไม่พบสถานที่ ตรวจสอบการสะกด</string>
     <string name="hs_place_offline">ค้นหาไม่ได้ ตรวจสอบเครือข่าย</string>
     <string name="hs_place_forget">ลืมสถานที่</string>
+    <string name="hs_weather_tv_note">ใช้ตำแหน่งที่ทีวีระบุเอง ซึ่งจะอยู่บนทีวีเท่านั้น พยากรณ์มาจาก Open-Meteo</string>
+    <string name="hs_place_tv">ตำแหน่งของทีวี</string>
+    <string name="hs_allow_location">อนุญาตให้เข้าถึงตำแหน่ง</string>
+    <string name="hs_allow_location_note">เพื่อให้สภาพอากาศใช้ตำแหน่งของทีวี หรือเลือกเมืองใน สถานที่</string>
+    <string name="hs_location_none">ทีวีไม่ได้ให้ตำแหน่ง เปิดการตั้งค่าตำแหน่งของทีวี หรือพิมพ์เมืองที่ใกล้ที่สุด</string>
 </resources>

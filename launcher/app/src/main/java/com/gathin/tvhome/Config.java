@@ -259,6 +259,8 @@ final class Config {
     boolean hideTileNames;
     /** The dock band hugs its tiles (small gaps, small corners) and the rows above and beside it line up with its edges. */
     boolean dockTight;
+    /** With no city chosen and none in config.xml, the weather uses the TV's location (TvLocation). */
+    boolean weatherAuto;
     String scene = "";
     /** Scenes switched off in Home settings ("scenes_off", ids joined by commas): never shown, whatever picks them. */
     java.util.Set<String> scenesOff = java.util.Collections.emptySet();
@@ -734,6 +736,7 @@ final class Config {
             built.couchMenus = bool(json, "couch_menus", false);
             built.hideTileNames = bool(json, "hide_tile_names", false);
             built.dockTight = bool(json, "dock_tight", false);
+            built.weatherAuto = bool(json, "weather_auto", false);
             built.scenes = bool(json, "scenes", false);
             built.watchRow = bool(json, "watch_row", false);
             built.scene = string(json, "scene", "").trim();

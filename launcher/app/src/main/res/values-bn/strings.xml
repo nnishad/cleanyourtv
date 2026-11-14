@@ -224,4 +224,9 @@
     <string name="hs_place_not_found">কোনো জায়গা পাওয়া যায়নি। বানান দেখুন।</string>
     <string name="hs_place_offline">খোঁজা যায়নি। নেটওয়ার্ক দেখুন।</string>
     <string name="hs_place_forget">জায়গাটি ভুলে যান</string>
+    <string name="hs_weather_tv_note">টিভি নিজে যেখানে আছে বলে জানায় সেটি ব্যবহার করে; তা টিভিতেই থাকে। পূর্বাভাস আসে Open-Meteo থেকে</string>
+    <string name="hs_place_tv">টিভির লোকেশন</string>
+    <string name="hs_allow_location">লোকেশনে অ্যাক্সেসের অনুমতি দিন</string>
+    <string name="hs_allow_location_note">যাতে আবহাওয়া টিভির অবস্থান ব্যবহার করতে পারে। অথবা জায়গা-তে একটি শহর বেছে নিন</string>
+    <string name="hs_location_none">টিভি কোনো লোকেশন দেয়নি। এর লোকেশন সেটিং চালু করুন, বা আপনার কাছের শহর লিখুন</string>
 </resources>

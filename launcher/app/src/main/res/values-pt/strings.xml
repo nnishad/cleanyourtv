@@ -268,4 +268,9 @@
     <string name="hs_place_not_found">Nenhum local encontrado. Verifique a ortografia.</string>
     <string name="hs_place_offline">Não foi possível pesquisar. Verifique a rede.</string>
     <string name="hs_place_forget">Esquecer o local</string>
+    <string name="hs_weather_tv_note">Usa onde a TV diz que está; isso fica na TV. A previsão vem do Open-Meteo</string>
+    <string name="hs_place_tv">Local da TV</string>
+    <string name="hs_allow_location">Permitir acesso ao local</string>
+    <string name="hs_allow_location_note">Para o clima usar onde a TV está. Ou escolha uma cidade em Local</string>
+    <string name="hs_location_none">A TV não informou um local. Ative a configuração Localização dela ou digite a cidade mais próxima</string>
 </resources>

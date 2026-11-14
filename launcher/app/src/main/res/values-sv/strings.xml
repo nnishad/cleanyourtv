@@ -241,4 +241,9 @@
     <string name="hs_place_not_found">Ingen plats hittades. Kontrollera stavningen.</string>
     <string name="hs_place_offline">Det gick inte att söka. Kontrollera nätverket.</string>
     <string name="hs_place_forget">Glöm platsen</string>
+    <string name="hs_weather_tv_note">Använder den plats TV:n själv anger; den stannar på TV:n. Prognosen kommer från Open-Meteo</string>
+    <string name="hs_place_tv">TV:ns plats</string>
+    <string name="hs_allow_location">Tillåt åtkomst till plats</string>
+    <string name="hs_allow_location_note">Så att vädret kan använda TV:ns plats. Eller välj en stad under Plats</string>
+    <string name="hs_location_none">TV:n har inte angett någon plats. Slå på dess inställning Plats eller skriv din närmaste stad</string>
 </resources>

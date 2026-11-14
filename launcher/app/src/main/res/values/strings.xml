@@ -219,6 +219,11 @@
     <string name="hs_place_not_found">No place found. Check the spelling.</string>
     <string name="hs_place_offline">Could not search. Check the network.</string>
     <string name="hs_place_forget">Forget the place</string>
+    <string name="hs_weather_tv_note">Uses where the TV says it is; that stays on the TV. The forecast comes from Open-Meteo</string>
+    <string name="hs_place_tv">TV location</string>
+    <string name="hs_allow_location">Allow access to location</string>
+    <string name="hs_allow_location_note">So the weather can use where the TV is. Or choose a city under Place</string>
+    <string name="hs_location_none">The TV has not given a location. Switch its Location setting on, or type your nearest city</string>
     <string name="hs_reorder">Reorder apps</string>
     <string name="hs_reorder_note">Move tiles with the remote</string>
     <string name="kw_remove">Remove from Keep watching</string>

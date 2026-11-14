@@ -220,4 +220,9 @@
     <string name="hs_place_not_found">Aucun lieu trouvé. Vérifiez l\'orthographe.</string>
     <string name="hs_place_offline">Recherche impossible. Vérifiez le réseau.</string>
     <string name="hs_place_forget">Oublier le lieu</string>
+    <string name="hs_weather_tv_note">Utilise l\'endroit où le téléviseur dit se trouver ; cela reste sur le téléviseur. Les prévisions viennent d\'Open-Meteo</string>
+    <string name="hs_place_tv">Position du téléviseur</string>
+    <string name="hs_allow_location">Autoriser l\'accès à la position</string>
+    <string name="hs_allow_location_note">Pour que la météo utilise la position du téléviseur. Ou choisissez une ville sous Lieu</string>
+    <string name="hs_location_none">Le téléviseur n\'a pas donné de position. Activez son réglage Position ou saisissez la ville la plus proche</string>
 </resources>

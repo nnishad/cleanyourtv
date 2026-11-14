@@ -271,4 +271,9 @@
     <string name="hs_place_not_found">Місце не знайдено. Перевірте написання.</string>
     <string name="hs_place_offline">Не вдалося виконати пошук. Перевірте мережу.</string>
     <string name="hs_place_forget">Забути місце</string>
+    <string name="hs_weather_tv_note">Використовується місцезнаходження, яке визначає сам телевізор; воно лишається на ньому. Прогноз надходить з Open-Meteo</string>
+    <string name="hs_place_tv">Місцезнаходження ТБ</string>
+    <string name="hs_allow_location">Дозволити доступ до місцезнаходження</string>
+    <string name="hs_allow_location_note">Щоб погода враховувала місцезнаходження ТБ. Або виберіть місто в розділі Місце</string>
+    <string name="hs_location_none">ТБ не надав місцезнаходження. Увімкніть його налаштування «Місцезнаходження» або введіть найближче місто</string>
 </resources>

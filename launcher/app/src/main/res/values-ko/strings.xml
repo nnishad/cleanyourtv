@@ -267,4 +267,9 @@
     <string name="hs_place_not_found">지역을 찾지 못했습니다. 철자를 확인하세요.</string>
     <string name="hs_place_offline">검색할 수 없습니다. 네트워크를 확인하세요.</string>
     <string name="hs_place_forget">지역 지우기</string>
+    <string name="hs_weather_tv_note">TV가 알아낸 위치를 사용하며, 이 정보는 TV에만 남습니다. 예보는 Open-Meteo에서 가져옵니다</string>
+    <string name="hs_place_tv">TV 위치</string>
+    <string name="hs_allow_location">위치 접근 허용</string>
+    <string name="hs_allow_location_note">날씨에 TV 위치를 사용하려면 필요합니다. 또는 지역에서 도시를 선택하세요</string>
+    <string name="hs_location_none">TV가 위치를 제공하지 않았습니다. TV의 위치 설정을 켜거나 가까운 도시를 입력하세요</string>
 </resources>

@@ -229,4 +229,9 @@
     <string name="hs_place_not_found">Lokasi tidak ditemukan. Periksa ejaan.</string>
     <string name="hs_place_offline">Tidak bisa mencari. Periksa jaringan.</string>
     <string name="hs_place_forget">Lupakan lokasi</string>
+    <string name="hs_weather_tv_note">Memakai lokasi yang ditentukan TV sendiri; tetap di TV. Prakiraan berasal dari Open-Meteo</string>
+    <string name="hs_place_tv">Lokasi TV</string>
+    <string name="hs_allow_location">Izinkan akses ke lokasi</string>
+    <string name="hs_allow_location_note">Agar cuaca memakai lokasi TV. Atau pilih kota di Lokasi</string>
+    <string name="hs_location_none">TV belum memberikan lokasi. Aktifkan setelan Lokasi di TV, atau ketik kota terdekat</string>
 </resources>

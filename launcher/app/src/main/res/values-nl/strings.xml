@@ -231,4 +231,9 @@
     <string name="hs_place_not_found">Geen plaats gevonden. Controleer de spelling.</string>
     <string name="hs_place_offline">Zoeken mislukt. Controleer het netwerk.</string>
     <string name="hs_place_forget">Plaats vergeten</string>
+    <string name="hs_weather_tv_note">Gebruikt de locatie die de tv zelf bepaalt; die blijft op de tv. De voorspelling komt van Open-Meteo</string>
+    <string name="hs_place_tv">Locatie van tv</string>
+    <string name="hs_allow_location">Toegang tot locatie toestaan</string>
+    <string name="hs_allow_location_note">Zodat het weer de locatie van de tv kan gebruiken. Of kies een plaats onder Plaats</string>
+    <string name="hs_location_none">De tv heeft geen locatie doorgegeven. Zet de instelling Locatie aan of typ je dichtstbijzijnde plaats</string>
 </resources>

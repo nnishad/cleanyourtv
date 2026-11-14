@@ -219,4 +219,9 @@
     <string name="hs_place_not_found">找不到地點。請檢查拼寫。</string>
     <string name="hs_place_offline">無法搜尋。請檢查網路。</string>
     <string name="hs_place_forget">忘記地點</string>
+    <string name="hs_weather_tv_note">使用電視自行判斷的位置，該資訊只會保留在電視上。預報來自 Open-Meteo</string>
+    <string name="hs_place_tv">電視位置</string>
+    <string name="hs_allow_location">允許存取位置資訊</string>
+    <string name="hs_allow_location_note">讓天氣使用電視所在位置。也可以在「地點」中選擇城市</string>
+    <string name="hs_location_none">電視沒有提供位置。請開啟其「位置資訊」設定，或輸入離你最近的城市</string>
 </resources>
