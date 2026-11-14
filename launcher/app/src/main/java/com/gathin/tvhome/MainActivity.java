@@ -476,9 +476,27 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private String clockFormat = "system";
     private java.util.Map<Integer, String> homeHoldAppKeys = java.util.Collections.emptyMap();
 
+    /** The Home on screen, for the settings sheet's live preview (refreshLive). */
+    private static java.lang.ref.WeakReference<MainActivity> live = new java.lang.ref.WeakReference<>(null);
+
+    /**
+     * A setting changed in the sheet beside Home: rebuild Home now, behind the sheet, so the change shows at once.
+     * The rebuilt Home has the new settings revision, so returning to it does not rebuild again.
+     */
+    static void refreshLive() {
+        MainActivity home = live.get();
+        if (home != null && !home.isFinishing()) home.runOnUiThread(home::recreate);
+    }
+
+    /** Reduced motion as the theme and config.xml set it, for other screens that animate. */
+    static boolean reducedMotionNow(Context ctx) {
+        return Config.load(ctx).reducedMotion;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        live = new java.lang.ref.WeakReference<>(this);
         setContentView(R.layout.activity_main);
         density = getResources().getDisplayMetrics().density;
         // config.xml, overlaid by config.json from a pushed theme (see Config and tools/theme.sh).

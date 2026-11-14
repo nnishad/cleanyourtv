@@ -43,7 +43,7 @@ public final class CouchSettingsActivity extends Activity {
     private SharedPreferences choices;
     private Config config;
     private LinearLayout sectionList, paneRows;
-    private TextView paneTitle;
+    private TextView paneTitle, crumb, hint;
     private float density;
     private int section;
 
@@ -59,64 +59,88 @@ public final class CouchSettingsActivity extends Activity {
         choices = getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE);
         config = Config.load(this);
 
-        LinearLayout root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.HORIZONTAL);
-        root.setBackgroundColor(0xF50A1410);   // Home only just shows behind it
-        root.setPadding(dp(64), dp(40), dp(64), dp(26));
+        // A sheet on the right; Home stays visible on the left and follows each change at once (MainActivity.refreshLive).
+        android.widget.FrameLayout root = new android.widget.FrameLayout(this);
+        LinearLayout sheet = new LinearLayout(this);
+        sheet.setOrientation(LinearLayout.VERTICAL);
+        sheet.setBackgroundResource(R.drawable.sheet_bg);
+        sheet.setPadding(dp(40), dp(44), dp(48), dp(28));
+        int width = Math.round(getResources().getDisplayMetrics().widthPixels * 0.44f);
+        android.widget.FrameLayout.LayoutParams sheetLp = new android.widget.FrameLayout.LayoutParams(width, ViewGroup.LayoutParams.MATCH_PARENT);
+        sheetLp.gravity = Gravity.END;
+        root.addView(sheet, sheetLp);
 
-        LinearLayout left = new LinearLayout(this);
-        left.setOrientation(LinearLayout.VERTICAL);
-        TextView title = text("Home settings", 30, Color.WHITE, true);
-        title.setPadding(dp(6), dp(2), 0, dp(26));
-        left.addView(title);
-        sectionList = new LinearLayout(this);
-        sectionList.setOrientation(LinearLayout.VERTICAL);
-        left.addView(sectionList);
-        root.addView(left, new LinearLayout.LayoutParams(dp(260), ViewGroup.LayoutParams.MATCH_PARENT));
-
-        LinearLayout right = new LinearLayout(this);
-        right.setOrientation(LinearLayout.VERTICAL);
-        right.setPadding(dp(44), 0, 0, 0);
-        paneTitle = text("", 28, Color.WHITE, true);
-        paneTitle.setPadding(dp(4), dp(2), 0, dp(20));
-        right.addView(paneTitle);
+        paneTitle = text("Home settings", 28, Color.WHITE, true);
+        paneTitle.setPadding(dp(6), 0, 0, dp(4));
+        sheet.addView(paneTitle);
+        crumb = text("", 14, getColor(R.color.text_tertiary), false);
+        crumb.setPadding(dp(6), 0, 0, dp(18));
+        sheet.addView(crumb);
         ScrollView pane = new ScrollView(this);
         pane.setVerticalScrollBarEnabled(false);
         pane.setClipToPadding(false);
         paneRows = new LinearLayout(this);
         paneRows.setOrientation(LinearLayout.VERTICAL);
+        sectionList = paneRows;
         pane.addView(paneRows, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        right.addView(pane, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
-        TextView hint = text("Up and down to choose, OK to change, Back to close", 12, 0x80FFFFFF, false);
-        hint.setPadding(dp(4), dp(10), 0, 0);
-        right.addView(hint);
-        root.addView(right, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f));
+        sheet.addView(pane, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+        hint = text("", 12, getColor(R.color.text_tertiary), false);
+        hint.setPadding(dp(6), dp(10), 0, 0);
+        sheet.addView(hint);
         setContentView(root);
+        if (!MainActivity.reducedMotionNow(this)) {   // the sheet slides in from the right edge
+            sheet.setTranslationX(width * 0.15f);
+            sheet.setAlpha(0f);
+            sheet.animate().translationX(0f).alpha(1f).setDuration(Motion.SLOW).setInterpolator(Motion.ENTER).start();
+        }
+        showSections(0);
+    }
 
+    /** The first level: one row per section, with what it holds. */
+    private void showSections(int focus) {
+        section = -1;
+        paneTitle.setText("Home settings");
+        crumb.setText("Changes show on Home straight away");
+        hint.setText("OK to open, Back to close");
+        paneRows.removeAllViews();
         for (int i = 0; i < SECTIONS.length; i++) {
             final int index = i;
-            View row = getLayoutInflater().inflate(R.layout.item_settings_section, sectionList, false);
+            View row = getLayoutInflater().inflate(R.layout.item_settings_section, paneRows, false);
             ((ImageView) row.findViewById(R.id.sectionIcon)).setImageResource(SECTION_ICONS[i]);
             ((TextView) row.findViewById(R.id.sectionTitle)).setText(SECTIONS[i]);
-            row.setOnFocusChangeListener((v, has) -> {
-                if (has) showSection(index);
-            });
             row.setOnClickListener(v -> {
-                View first = paneRows.getChildCount() > 0 ? paneRows.getChildAt(0) : null;
+                showSection(index);
+                View first = firstFocusable();
                 if (first != null) first.requestFocus();
             });
-            sectionList.addView(row);
+            Focus.attach(row, false, false);
+            paneRows.addView(row);
         }
-        showSection(0);
-        sectionList.getChildAt(0).requestFocus();
+        paneRows.getChildAt(Math.max(0, Math.min(focus, paneRows.getChildCount() - 1))).requestFocus();
+    }
+
+    private View firstFocusable() {
+        for (int i = 0; i < paneRows.getChildCount(); i++) if (paneRows.getChildAt(i).isFocusable()) return paneRows.getChildAt(i);
+        return null;
+    }
+
+    /** Back inside a section returns to the sections; Back on the sections closes the sheet. */
+    @Override
+    public void onBackPressed() {
+        if (section >= 0) {
+            showSections(section);
+            return;
+        }
+        super.onBackPressed();
     }
 
     // ---- the panes ------------------------------------------------------------------------------------
 
     private void showSection(int index) {
         section = index;
-        for (int i = 0; i < sectionList.getChildCount(); i++) sectionList.getChildAt(i).setSelected(i == index);
         paneTitle.setText(SECTIONS[index]);
+        crumb.setText("Home settings");
+        hint.setText("OK to change, Back for all settings");
         paneRows.removeAllViews();
         switch (index) {
             case 0:
@@ -138,6 +162,10 @@ public final class CouchSettingsActivity extends Activity {
 
     /** Redraws the pane after a change and puts focus back on the row that was changed. */
     private void rebuild(int focusIndex) {
+        if (section < 0) {
+            showSections(0);
+            return;
+        }
         showSection(section);
         View row = paneRows.getChildAt(Math.max(0, Math.min(focusIndex, paneRows.getChildCount() - 1)));
         if (row != null) row.requestFocus();
@@ -284,10 +312,11 @@ public final class CouchSettingsActivity extends Activity {
         return 0;
     }
 
-    /** A change was made: Home rebuilds with it once this screen closes (see MainActivity#onResume). */
+    /** A change was made: Home, visible beside the sheet, rebuilds with it now (MainActivity.refreshLive). */
     private void changed() {
         setResult(RESULT_OK);
-        choices.edit().putLong(Config.SETTINGS_REVISION_KEY, choices.getLong(Config.SETTINGS_REVISION_KEY, 0) + 1).apply();
+        choices.edit().putLong(Config.SETTINGS_REVISION_KEY, choices.getLong(Config.SETTINGS_REVISION_KEY, 0) + 1).commit();
+        MainActivity.refreshLive();
     }
 
     @Override

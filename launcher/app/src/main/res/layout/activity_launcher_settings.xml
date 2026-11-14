@@ -2,7 +2,7 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FF101419"
+    android:background="#FF0D1E19"
     android:fillViewport="true">
 
     <LinearLayout
@@ -15,11 +15,12 @@
         android:paddingBottom="38dp">
 
         <TextView
+            android:fontFamily="@string/font_medium"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/launcher_settings"
-            android:textColor="#FFFFFFFF"
-            android:textSize="34sp" />
+            android:textColor="@color/text_primary"
+            android:textSize="@dimen/type_headline" />
 
         <TextView
             android:id="@+id/reorderChoice"
@@ -29,12 +30,13 @@
             android:visibility="gone" />
 
         <TextView
+            android:fontFamily="@string/font_medium"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="28dp"
             android:text="@string/columns_label"
-            android:textColor="#FFFFFFFF"
-            android:textSize="20sp" />
+            android:textColor="@color/text_primary"
+            android:textSize="@dimen/type_title" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -49,12 +51,13 @@
         </LinearLayout>
 
         <TextView
+            android:fontFamily="@string/font_medium"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
             android:text="@string/rows_below_dock_label"
-            android:textColor="#FFFFFFFF"
-            android:textSize="20sp" />
+            android:textColor="@color/text_primary"
+            android:textSize="@dimen/type_title" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -69,12 +72,13 @@
         </LinearLayout>
 
         <TextView
+            android:fontFamily="@string/font_medium"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
             android:text="@string/dock_opacity_label"
-            android:textColor="#FFFFFFFF"
-            android:textSize="20sp" />
+            android:textColor="@color/text_primary"
+            android:textSize="@dimen/type_title" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -89,12 +93,13 @@
         </LinearLayout>
 
         <TextView
+            android:fontFamily="@string/font_medium"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
             android:text="@string/dream_name"
-            android:textColor="#FFFFFFFF"
-            android:textSize="20sp" />
+            android:textColor="@color/text_primary"
+            android:textSize="@dimen/type_title" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -123,12 +128,13 @@
             android:layout_marginTop="10dp" />
 
         <TextView
+            android:fontFamily="@string/font_medium"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:text="@string/advanced_effects_warning"
-            android:textColor="#FFACB8C1"
-            android:textSize="14sp" />
+            android:textColor="@color/text_secondary"
+            android:textSize="@dimen/type_body" />
 
         <TextView
             android:id="@+id/openOnStartChoice"
@@ -143,12 +149,13 @@
             android:text="@string/follow_theme" />
 
         <TextView
+            android:fontFamily="@string/font_medium"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="7dp"
             android:text="@string/follow_theme_hint"
-            android:textColor="#FFACB8C1"
-            android:textSize="14sp" />
+            android:textColor="@color/text_secondary"
+            android:textSize="@dimen/type_body" />
 
         <TextView
             android:id="@+id/defaultHomeChoice"
@@ -157,12 +164,13 @@
             android:text="@string/home_settings" />
 
         <TextView
+            android:fontFamily="@string/font_medium"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="7dp"
             android:text="@string/home_settings_help"
-            android:textColor="#FFACB8C1"
-            android:textSize="14sp" />
+            android:textColor="@color/text_secondary"
+            android:textSize="@dimen/type_body" />
 
         <TextView
             android:id="@+id/tvSettingsChoice"
