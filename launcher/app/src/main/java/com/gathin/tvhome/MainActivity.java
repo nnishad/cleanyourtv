@@ -524,6 +524,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         wallpaperPlayer = new WallpaperPlayer(this, root, cfg);
         hideRowsMs = cfg.hideRowsIdleSeconds * 1000L;
         couchMenus = cfg.couchMenus;
+        if (cfg.dockTight) {   // more of the screen for the rows: half the side margins
+            View content = findViewById(R.id.content);
+            content.setPaddingRelative(Math.round(24 * density), content.getPaddingTop(),
+                    Math.round(24 * density), content.getPaddingBottom());
+        }
         rowsWrap = findViewById(R.id.rowsWrap);
         topButtonsView = findViewById(R.id.topButtons);
         if (cfg.scenes) {
@@ -778,7 +783,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // 7dp gap and 22dp label item_app.xml keeps for them would only lift the row: sit it that much lower.
             if (singleRow && !cfg.alwaysShowNames) want += (int) (29 * density);
             // Scenes look: the dock sits lower, as in couch-tv, leaving the scene (and the Keep watching row) the room.
-            if (cfg.scenes && MainActivity.this.dockRow && !singleRow) want += (int) (26 * density);
+            if (cfg.scenes && MainActivity.this.dockRow && !singleRow) want += (int) ((cfg.dockTight ? 50 : 26) * density);
             if (grid.getPaddingTop() != want) {
                 grid.setPadding(grid.getPaddingLeft(), want, grid.getPaddingRight(), grid.getPaddingBottom());
                 // A vertical grid parks the dock on the new padding line by scrolling (onTileFocused); a sideways

@@ -78,6 +78,7 @@ final class KeepWatching {
     private final float density;
     private List<Item> items = new ArrayList<>();
     private int cardWidth;   // 0: the layout's own width
+    private int bandPx;      // the dock band's width the row lines up with
     private String signature = "";
     private int lastWant = -1;
     private boolean swept;
@@ -93,6 +94,36 @@ final class KeepWatching {
         list.setItemAnimator(null);
         list.setHasFixedSize(true);
         list.setAdapter(new Adapter());
+        list.addItemDecoration(new EdgeShadow(density));
+    }
+
+    /**
+     * A soft dark shade over the row's left and right edges, drawn only on a side that has more cards beyond it, so a
+     * card cut by the edge reads as continuing rather than as clipped. Dark over any scene, and no offscreen layer.
+     */
+    private static final class EdgeShadow extends RecyclerView.ItemDecoration {
+        private final float length;
+        private final android.graphics.Paint left = new android.graphics.Paint(), right = new android.graphics.Paint();
+        private int shadedFor;
+
+        EdgeShadow(float density) {
+            length = 56 * density;
+        }
+
+        @Override
+        public void onDrawOver(@NonNull android.graphics.Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+            int w = parent.getWidth(), h = parent.getHeight();
+            if (w == 0) return;
+            if (shadedFor != w) {
+                int[] colors = {0xB3000000, 0x00000000};
+                left.setShader(new android.graphics.LinearGradient(0, 0, length, 0, colors, null, android.graphics.Shader.TileMode.CLAMP));
+                right.setShader(new android.graphics.LinearGradient(w, 0, w - length, 0, colors, null, android.graphics.Shader.TileMode.CLAMP));
+                shadedFor = w;
+            }
+            float top = parent.getPaddingTop(), bottom = h - parent.getPaddingBottom();   // the cards, not their padding
+            if (parent.canScrollHorizontally(-1)) c.drawRect(0, top, length, bottom, left);
+            if (parent.canScrollHorizontally(1)) c.drawRect(w - length, top, w, bottom, right);
+        }
     }
 
     /** Looks at the list again (Home came back); a no-op when it has not changed. */
@@ -132,12 +163,22 @@ final class KeepWatching {
 
     /** Lines the row up with the dock band: it starts at the band's left edge, ends at its right, and three cards fill it. */
     void alignTo(int left, int right) {
-        int gap = (int) (10 * density);
-        int width = (right - left - 2 * gap) / 3;
         int wrap = ((View) block.getParent()).getWidth();
-        if (width <= 0 || wrap <= 0) return;
+        if (right - left <= 0 || wrap <= 0) return;
         block.setPaddingRelative(left, block.getPaddingTop(), Math.max(0, wrap - right), block.getPaddingBottom());
-        if (width != cardWidth) {
+        bandPx = right - left;
+        sizeCards();
+    }
+
+    /**
+     * Three cards fill the band exactly. With more than three the fourth shows its first part at the band's right
+     * edge (cards are 3.4 across), so it is clear the row scrolls; the row clips at the band, never at the screen.
+     */
+    private void sizeCards() {
+        if (bandPx <= 0) return;
+        int gap = (int) (10 * density);
+        int width = items.size() > 3 ? Math.round((bandPx - 3 * gap) / 3.4f) : (bandPx - 2 * gap) / 3;
+        if (width > 0 && width != cardWidth) {
             cardWidth = width;
             list.getAdapter().notifyDataSetChanged();
         }
@@ -157,6 +198,7 @@ final class KeepWatching {
         if (!now.equals(signature)) {
             signature = now;
             items = got;
+            sizeCards();
             list.getAdapter().notifyDataSetChanged();
             for (Item it : got) loadArt(it.art);
         }
