@@ -124,6 +124,7 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
             }
         }
         if (!any) return;
+        float firstLeft = rect.left;   // the leftmost dock card, before the band's padding
         float pad = (tight ? 7 : 14) * density;
         // The band can only draw inside the grid, and the first and last dock tiles sit 12dp in from its
         // edges: a full 14dp at the sides sliced the rounded ends flat (#454). Keep the sides, with the
@@ -160,10 +161,18 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
             shaderTop = rect.top;
             shaderBottom = rect.bottom;
         }
-        if (edgeListener != null && (Math.abs(rect.left - edgeLeft) > 1f || Math.abs(rect.right - edgeRight) > 1f)) {
+        // The edges the rows above line up with are the full dock's, worked out from the columns, so a dock with
+        // fewer apps than columns (the band ends early) does not pull the cards and the top buttons in with it.
+        float fullRight = rect.right;
+        if (!singleRow && dockSize > 0 && cardWidth > 0) {
+            float cell = (parent.getWidth() - parent.getPaddingLeft() - parent.getPaddingRight()) / (float) dockSize;
+            float sides = firstLeft - rect.left;   // the band's padding at the sides
+            fullRight = firstLeft + (dockSize - 1) * cell + cardWidth + sides;
+        }
+        if (edgeListener != null && (Math.abs(rect.left - edgeLeft) > 1f || Math.abs(fullRight - edgeRight) > 1f)) {
             edgeLeft = rect.left;
-            edgeRight = rect.right;
-            final float l = rect.left, r = rect.right;
+            edgeRight = fullRight;
+            final float l = rect.left, r = fullRight;
             parent.post(() -> edgeListener.onBand(l, r));   // not from inside a draw pass
         }
         c.drawRoundRect(rect, radius, radius, band);

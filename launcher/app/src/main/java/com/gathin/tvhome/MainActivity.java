@@ -791,6 +791,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 // row cannot scroll vertically, and the layout request made from inside this layout pass is
                 // dropped, so lay the row out again on the next frame. The glass and the title were placed for the
                 // old position, so fit them again once it has moved.
+                // A vertical grid parks the dock on the new line when a tile takes focus (onTileFocused). With focus on a
+                // top button (Home rebuilt after Home settings, a theme push) no tile does, and this pass drops its own
+                // layout request: the dock stayed up at the old padding until a key was pressed. Lay it out again.
+                if (!singleRow) grid.post(grid::requestLayout);
                 if (singleRow) grid.post(() -> {
                     grid.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
                         @Override
