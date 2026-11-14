@@ -229,4 +229,9 @@
     <string name="hs_place_not_found">No s\'ha trobat cap lloc. Revisa l\'ortografia.</string>
     <string name="hs_place_offline">No s\'ha pogut cercar. Revisa la xarxa.</string>
     <string name="hs_place_forget">Oblida el lloc</string>
+    <string name="hs_weather_tv_note">Utilitza on diu que és el televisor; això es queda al televisor. La previsió ve d\'Open-Meteo</string>
+    <string name="hs_place_tv">Ubicació del televisor</string>
+    <string name="hs_allow_location">Permet l\'accés a la ubicació</string>
+    <string name="hs_allow_location_note">Perquè el temps utilitzi on és el televisor. O tria una ciutat a Lloc</string>
+    <string name="hs_location_none">El televisor no ha donat cap ubicació. Activa\'n el paràmetre Ubicació o escriu la ciutat més propera</string>
 </resources>

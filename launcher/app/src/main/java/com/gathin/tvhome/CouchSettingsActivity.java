@@ -1,5 +1,6 @@
 package com.gathin.tvhome;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
@@ -40,7 +41,7 @@ public final class CouchSettingsActivity extends Activity {
 
     /** The result's extra when Reorder apps was chosen: Home rebuilds and then enters reorder mode. */
     static final String EXTRA_REORDER = "com.gathin.tvhome.extra.REORDER_FROM_SETTINGS";
-    private static final int REQUEST_WATCH_NEXT = 8;
+    private static final int REQUEST_WATCH_NEXT = 8, REQUEST_LOCATION = 9;
     private static final String WATCH_NEXT_PERMISSION = "android.permission.READ_TV_LISTINGS";
     private static final int LOOK = 0, ROWS = 1, LAYOUT = 2, MOTION = 3, WEATHER = 4;
     private static final int[] SECTIONS = {R.string.hs_sec_look, R.string.hs_sec_rows, R.string.hs_sec_layout,
@@ -353,15 +354,25 @@ public final class CouchSettingsActivity extends Activity {
 
     private void weatherPane() {
         WeatherPlace place = WeatherPlace.current(this);
+        boolean tv = place == null && config.weatherAuto;   // no city: the TV's own location may give the place
+        String value = place != null ? place.name : getString(R.string.hs_place_none), note = getString(R.string.hs_place_set_note);
         if (place != null) {
             toggle(R.string.hs_show_weather, getString(R.string.hs_weather_note),
                     choices.getBoolean("show_weather", WeatherPlace.onByDefault(this)),
                     v -> choices.edit().putBoolean("show_weather", v).apply());
+        } else if (tv && !TvLocation.allowed(this)) {
+            action(getString(R.string.hs_allow_location), getString(R.string.hs_allow_location_note), () ->
+                    requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION}, REQUEST_LOCATION));
+        } else if (tv) {
+            toggle(R.string.hs_show_weather, getString(R.string.hs_weather_tv_note), choices.getBoolean("show_weather", true),
+                    v -> choices.edit().putBoolean("show_weather", v).apply());
+            if (TvLocation.cached(this) != null) value = getString(R.string.hs_place_tv);
+            else note = getString(R.string.hs_location_none);
         } else {
             action(getString(R.string.hs_show_weather), getString(R.string.hs_weather_none), null);
         }
-        open(R.string.hs_place_label, getString(R.string.hs_place_set_note),
-                place != null ? place.name : getString(R.string.hs_place_none), PAGE_PLACE);
+        open(R.string.hs_place_label, note, value, PAGE_PLACE);
     }
 
     private void aboutPane() {
@@ -773,6 +784,10 @@ public final class CouchSettingsActivity extends Activity {
         super.onRequestPermissionsResult(request, permissions, results);
         if (request == REQUEST_WATCH_NEXT) {
             changed();   // Home asks Watch Next again
+            rebuild(0);
+        } else if (request == REQUEST_LOCATION) {
+            changed();   // Home asks the TV where it is
+            config = Config.load(this);
             rebuild(0);
         }
     }

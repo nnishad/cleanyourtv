@@ -272,4 +272,9 @@
     <string name="hs_place_not_found">Место не найдено. Проверьте написание.</string>
     <string name="hs_place_offline">Не удалось выполнить поиск. Проверьте сеть.</string>
     <string name="hs_place_forget">Забыть место</string>
+    <string name="hs_weather_tv_note">Используется местоположение, которое определяет сам телевизор; оно остаётся на нём. Прогноз берётся из Open-Meteo</string>
+    <string name="hs_place_tv">Местоположение ТВ</string>
+    <string name="hs_allow_location">Разрешить доступ к местоположению</string>
+    <string name="hs_allow_location_note">Чтобы погода учитывала местоположение ТВ. Или выберите город в разделе Место</string>
+    <string name="hs_location_none">ТВ не передал местоположение. Включите его настройку «Местоположение» или введите ближайший город</string>
 </resources>

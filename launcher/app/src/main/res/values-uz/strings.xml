@@ -231,4 +231,9 @@
     <string name="hs_place_not_found">Joy topilmadi. Imloni tekshiring.</string>
     <string name="hs_place_offline">Qidirib boʻlmadi. Tarmoqni tekshiring.</string>
     <string name="hs_place_forget">Joyni unutish</string>
+    <string name="hs_weather_tv_note">Televizor oʻzi aniqlagan joylashuvdan foydalanadi; u televizorda qoladi. Prognoz Open-Meteo’dan olinadi</string>
+    <string name="hs_place_tv">Televizor joylashuvi</string>
+    <string name="hs_allow_location">Joylashuvga ruxsat berish</string>
+    <string name="hs_allow_location_note">Ob-havo televizor joylashuvidan foydalanishi uchun. Yoki Joy ostida shaharni tanlang</string>
+    <string name="hs_location_none">Televizor joylashuvni bermadi. Uning Joylashuv sozlamasini yoqing yoki eng yaqin shaharni kiriting</string>
 </resources>

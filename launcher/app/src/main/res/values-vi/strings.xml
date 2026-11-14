@@ -243,4 +243,9 @@
     <string name="hs_place_not_found">Không tìm thấy địa điểm. Kiểm tra chính tả.</string>
     <string name="hs_place_offline">Không thể tìm kiếm. Kiểm tra mạng.</string>
     <string name="hs_place_forget">Xóa địa điểm</string>
+    <string name="hs_weather_tv_note">Dùng vị trí do chính TV xác định; vị trí này chỉ ở lại trên TV. Dự báo lấy từ Open-Meteo</string>
+    <string name="hs_place_tv">Vị trí của TV</string>
+    <string name="hs_allow_location">Cho phép truy cập vị trí</string>
+    <string name="hs_allow_location_note">Để thời tiết dùng vị trí của TV. Hoặc chọn một thành phố trong Địa điểm</string>
+    <string name="hs_location_none">TV chưa cung cấp vị trí. Hãy bật cài đặt Vị trí của TV, hoặc nhập thành phố gần nhất</string>
 </resources>
