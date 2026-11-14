@@ -30,22 +30,14 @@
     <string name="native_settings">Valmistajan asetukset</string>
     <string name="columns_label">Sovelluksia rivillä</string>
     <string name="dock_opacity_label">Telakkapalkin peittävyys</string>
-    <string name="animations_state">Animaatiot: %1$s</string>
     <string name="advanced_effects">Lisätehosteet</string>
-    <string name="advanced_effects_state">Lisätehosteet: %1$s</string>
     <string name="open_on_start_label">Avaa käynnistettäessä</string>
-    <string name="open_on_start_state">Avaa käynnistettäessä: %1$s</string>
-    <string name="advanced_effects_warning">Lisää ruudun noston, kuvakkeen zoomauksen ja pehmeät värisiirtymät. Voi lisätä muistinkäyttöä; todellinen ero riippuu televisiosta.</string>
-    <string name="follow_theme">Noudata teemaa (nollaa televisiossa tehdyt valinnat)</string>
-    <string name="follow_theme_hint">Käyttää nykyisen teeman tai sisäänrakennettuja asettelu- ja liikeasetuksia. Teeman lähettäminen tai nollaaminen poistaa myös televisiossa tehdyt valinnat.</string>
     <string name="tv_settings">Television järjestelmäasetukset</string>
     <string name="quick_picture">Näyttö</string>
     <string name="quick_network">Verkko</string>
     <string name="quick_apps">Sovellukset</string>
     <string name="quick_apps_hint">Ota uudelleen käyttöön</string>
-    <string name="on">Päällä</string>
     <string name="off">Pois</string>
-    <string name="enable">Ota käyttöön</string>
     <string name="input_key_service_description">Avaa lähteen valinnan, kun kaukosäätimen lähdepainiketta painetaan.</string>
     <string name="home_key_name">Koti-painike</string>
     <string name="home_key_description">Kaukosäätimen Koti-painike avaa tämän käynnistimen.</string>
@@ -100,9 +92,7 @@
     <string name="dock_edit_pick_place">Valitse telakan paikka tälle sovellukselle ja paina OK. Takaisin peruuttaa.</string>
     <string name="rows_below_dock_label">Rivit telakan alla</string>
     <string name="wallpaper_label">Taustakuva</string>
-    <string name="wallpaper_state">Taustakuva: %1$s</string>
     <string name="wallpaper_none">Ei taustakuvaa</string>
-    <string name="wallpaper_applied">Taustakuva vaihdettu</string>
     <string name="wallpaper_theme_default">Teeman oletus</string>
     <string name="race_kicker">Osakilpailu %1$d · %2$s · %3$s</string>
     <string name="race_kicker_no_place">Osakilpailu %1$d · %2$s</string>
@@ -112,7 +102,4 @@
     <string name="race_finished">Ruutulippu</string>
     <string name="last_opened">Viimeksi avattu %1$s</string>
     <string name="game_live">Käynnissä nyt</string>
-    <string name="clock_format_system">Järjestelmä</string>
-    <string name="clock_format_12">12 tuntia</string>
-    <string name="clock_format_24">24 tuntia</string>
 </resources>

@@ -26,15 +26,16 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Home settings (couch_menus; the gear's "Home settings"): one glass sheet on the right, with Home beside it
+ * Home settings, the launcher's one settings screen (the gear's "Home settings"): a glass sheet on the right, with Home beside it
  * following each change at once. Three levels: the sections, a section's rows, and for a few rows a page of their own
  * (Backgrounds, Wallpaper, Open on start). A row is a switch, a stepper (OK or Right for the next value, Left for the
  * one before), a row that opens a page, an action, or plain information. Every choice is kept in the launcher's own
- * preferences, which Config reads over the theme. The grid, dock and motion choices that used to live on the separate
- * Launcher settings page are here too, so one screen holds everything.
+ * preferences, which Config reads over the theme.
  */
 public final class CouchSettingsActivity extends Activity {
 
+    /** The result's extra when Reorder apps was chosen: Home rebuilds and then enters reorder mode. */
+    static final String EXTRA_REORDER = "com.gathin.tvhome.extra.REORDER_FROM_SETTINGS";
     private static final int REQUEST_WATCH_NEXT = 8;
     private static final String WATCH_NEXT_PERMISSION = "android.permission.READ_TV_LISTINGS";
     private static final int LOOK = 0, ROWS = 1, LAYOUT = 2, MOTION = 3, WEATHER = 4;
@@ -61,7 +62,7 @@ public final class CouchSettingsActivity extends Activity {
             R.string.hs_part_night, R.string.hs_part_fog};
     /** Everything this screen can set; Reset takes all of it back to what the theme says. */
     private static final String[] OWN_KEYS = {"scenes", "scene", "scenes_off", "watch_row", "hide_rows_idle_seconds",
-            "home_idle_clock_minutes", "show_weather", "hide_tile_names", "calm_tiles", "columns", Config.ROWS_BELOW_DOCK_KEY,
+            "home_idle_clock_minutes", "show_weather", "hide_tile_names", "columns", Config.ROWS_BELOW_DOCK_KEY,
             "animations", "advanced_effects", Config.WALLPAPER_CHOICE_KEY, Config.DOCK_OPACITY_KEY,
             Config.CLOCK_FORMAT_KEY, OpenOnStart.KEY};
 
@@ -292,8 +293,6 @@ public final class CouchSettingsActivity extends Activity {
         }
         toggle(R.string.hs_app_names, getString(R.string.hs_app_names_note), !config.hideTileNames,
                 v -> choices.edit().putBoolean("hide_tile_names", !v).apply());
-        toggle(R.string.hs_calm, getString(R.string.hs_calm_note), config.calmTiles,
-                v -> choices.edit().putBoolean("calm_tiles", v).apply());
         int clock = 0;
         for (int i = 0; i < CLOCK_IDS.length; i++) if (CLOCK_IDS[i].equals(config.clockFormat)) clock = i;
         step(R.string.hs_clock, null, strings(CLOCK_NAMES), clock,
@@ -320,7 +319,7 @@ public final class CouchSettingsActivity extends Activity {
 
     private void layoutPane() {
         action(getString(R.string.hs_reorder), getString(R.string.hs_reorder_note), () -> {
-            setResult(RESULT_OK, new Intent().putExtra(LauncherSettingsActivity.EXTRA_REORDER, true));
+            setResult(RESULT_OK, new Intent().putExtra(EXTRA_REORDER, true));
             finish();
         });
         step(R.string.columns_label, getString(R.string.hs_columns_note), numbers(COLUMNS), indexOf(COLUMNS, config.columns),

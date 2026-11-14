@@ -259,8 +259,6 @@ final class Config {
     boolean hideTileNames;
     /** The dock band hugs its tiles (small gaps, small corners) and the rows above and beside it line up with its edges. */
     boolean dockTight;
-    /** Tiles that are not focused are a little dimmer and less saturated; the focused one has its full colour. */
-    boolean calmTiles;
     String scene = "";
     /** Scenes switched off in Home settings ("scenes_off", ids joined by commas): never shown, whatever picks them. */
     java.util.Set<String> scenesOff = java.util.Collections.emptySet();
@@ -736,7 +734,6 @@ final class Config {
             built.couchMenus = bool(json, "couch_menus", false);
             built.hideTileNames = bool(json, "hide_tile_names", false);
             built.dockTight = bool(json, "dock_tight", false);
-            built.calmTiles = bool(json, "calm_tiles", false);
             built.scenes = bool(json, "scenes", false);
             built.watchRow = bool(json, "watch_row", false);
             built.scene = string(json, "scene", "").trim();
@@ -746,7 +743,6 @@ final class Config {
         // What was chosen in Home settings on the TV wins over the theme (a new theme clears these, see syncThemeChoices).
         if (choices.contains("hide_tile_names")) built.hideTileNames = choices.getBoolean("hide_tile_names", built.hideTileNames);
         if (choices.contains("scenes")) built.scenes = choices.getBoolean("scenes", built.scenes);
-        if (choices.contains("calm_tiles")) built.calmTiles = choices.getBoolean("calm_tiles", built.calmTiles);
         if (choices.contains("scene")) built.scene = choices.getString("scene", built.scene);
         if (choices.contains("scenes_off")) built.scenesOff = idSet(choices.getString("scenes_off", ""));
         if (choices.contains("watch_row")) built.watchRow = choices.getBoolean("watch_row", built.watchRow);
@@ -818,7 +814,7 @@ final class Config {
 
     /** The couch-tv Home settings (CouchSettingsActivity): a new theme starts from what it says. */
     private static void clearHomeSettings(SharedPreferences.Editor editor) {
-        editor.remove("scenes").remove("scene").remove("scenes_off").remove("calm_tiles").remove("watch_row").remove("hide_rows_idle_seconds")
+        editor.remove("scenes").remove("scene").remove("scenes_off").remove("watch_row").remove("hide_rows_idle_seconds")
                 .remove("home_idle_clock_minutes").remove("show_weather").remove("hide_tile_names");
     }
 

@@ -31,22 +31,12 @@
     <string name="rows_below_dock_label">Řádků pod dokem</string>
     <string name="dock_opacity_label">Krytí pruhu docku</string>
     <string name="wallpaper_label">Tapeta</string>
-    <string name="wallpaper_state">Tapeta: %1$s</string>
     <string name="wallpaper_none">Žádná</string>
-    <string name="wallpaper_applied">Tapeta změněna</string>
     <string name="wallpaper_theme_default">Podle motivu</string>
-    <string name="animations_state">Animace: %1$s</string>
     <string name="advanced_effects">Pokročilé efekty</string>
-    <string name="advanced_effects_state">Pokročilé efekty: %1$s</string>
     <string name="open_on_start_label">Otevřít po spuštění</string>
-    <string name="open_on_start_state">Otevřít po spuštění: %1$s</string>
-    <string name="advanced_effects_warning">Přidá zvednutou dlaždici, zvětšení ikon a plynulé přechody barev. Může zvýšit spotřebu paměti, skutečný rozdíl záleží na televizi.</string>
-    <string name="follow_theme">Podle motivu (zrušit volby na TV)</string>
-    <string name="follow_theme_hint">Použije aktuální motiv nebo vestavěné nastavení rozložení a animací. Nahrání nového motivu nebo jeho resetování také zruší volby provedené na televizi.</string>
     <string name="tv_settings">Systémová nastavení TV</string>
-    <string name="on">Zapnuto</string>
     <string name="off">Vypnuto</string>
-    <string name="enable">Zapnout</string>
     <string name="input_key_service_description">Po stisknutí tlačítka Input na ovladači otevře výběr vstupu.</string>
     <string name="home_key_name">Tlačítko Domů</string>
     <string name="home_key_description">Tlačítko Domů na ovladači otevře tuto domovskou obrazovku.</string>
@@ -109,7 +99,4 @@
     <string name="greeting_with_name">%1$s, %2$s</string>
     <string name="last_opened">Naposledy otevřeno: %1$s</string>
     <string name="game_live">Právě živě</string>
-    <string name="clock_format_system">Systém</string>
-    <string name="clock_format_12">12hodinové</string>
-    <string name="clock_format_24">24hodinové</string>
 </resources>

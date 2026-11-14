@@ -54,26 +54,16 @@
     <string name="rows_below_dock_label">Rows below dock</string>
     <string name="dock_opacity_label">Dock band opacity</string>
     <string name="wallpaper_label">Wallpaper</string>
-    <string name="wallpaper_state">Wallpaper: %1$s</string>
     <string name="wallpaper_none">None</string>
-    <string name="wallpaper_applied">Wallpaper changed</string>
     <string name="wallpaper_theme_default">Theme default</string>
-    <string name="animations_state">Animations: %1$s</string>
     <string name="advanced_effects">Advanced effects</string>
-    <string name="advanced_effects_state">Advanced effects: %1$s</string>
     <string name="open_on_start_label">Open on start</string>
-    <string name="open_on_start_state">Open on start: %1$s</string>
-    <string name="advanced_effects_warning">Adds a lifted tile, icon zoom and smooth colour transitions. May increase memory use; the actual difference depends on your TV.</string>
-    <string name="follow_theme">Follow theme (reset on-TV choices)</string>
-    <string name="follow_theme_hint">Uses the current theme or built-in layout and motion settings. Pushing or resetting a theme also clears your on-TV choices.</string>
     <string name="tv_settings">TV system settings</string>
     <string name="quick_picture">Display</string>
     <string name="quick_network">Network</string>
     <string name="quick_apps">Apps</string>
     <string name="quick_apps_hint">Re-enable</string>
-    <string name="on">On</string>
     <string name="off">Off</string>
-    <string name="enable">Enable</string>
     <string name="input_key_service_description">Opens the input switcher when the remote\'s Input button is pressed.</string>
     <string name="home_key_name">Home button</string>
     <string name="home_key_description">Makes the remote\'s Home button open this launcher.</string>
@@ -155,9 +145,6 @@
     <string name="last_opened">Last opened %1$s</string>
     <!-- game_day: a game on now, in the race panel. -->
     <string name="game_live">Live now</string>
-    <string name="clock_format_system">System</string>
-    <string name="clock_format_12">12-hour</string>
-    <string name="clock_format_24">24-hour</string>
     <string name="keep_watching">Keep watching</string>
 
     <!-- Couch-tv port (couch-port branch): Home settings sheet, gear and Inputs menus, Keep watching. -->
@@ -229,8 +216,6 @@
     <string name="hs_place_note">Set with weather_place, latitude and longitude in config.xml</string>
     <string name="hs_reorder">Reorder apps</string>
     <string name="hs_reorder_note">Move tiles with the remote</string>
-    <string name="hs_calm">Calm app tiles</string>
-    <string name="hs_calm_note">Apps you are not on are a little dimmer, so the picture leads</string>
     <string name="kw_remove">Remove from Keep watching</string>
     <string name="kw_removed">Removed. It returns if you watch it again.</string>
     <string name="hs_sec_layout">Apps and layout</string>
@@ -262,4 +247,29 @@
     <string name="tip_up">Tip: press Up from the apps for Keep watching</string>
     <string name="tip_gear">Tip: the gear opens Home settings and TV settings</string>
     <string name="kw_min_left">%1$d min left</string>
+    <!-- The weather beside the date (Weather.describe). -->
+    <string name="wx_sunny">Sunny</string>
+    <string name="wx_clear">Clear</string>
+    <string name="wx_mostly_sunny">Mostly sunny</string>
+    <string name="wx_mostly_clear">Mostly clear</string>
+    <string name="wx_partly_cloudy">Partly cloudy</string>
+    <string name="wx_overcast">Overcast</string>
+    <string name="wx_fog">Fog</string>
+    <string name="wx_drizzle">Drizzle</string>
+    <string name="wx_freezing_drizzle">Freezing drizzle</string>
+    <string name="wx_light_rain">Light rain</string>
+    <string name="wx_rain">Rain</string>
+    <string name="wx_heavy_rain">Heavy rain</string>
+    <string name="wx_freezing_rain">Freezing rain</string>
+    <string name="wx_light_snow">Light snow</string>
+    <string name="wx_snow">Snow</string>
+    <string name="wx_heavy_snow">Heavy snow</string>
+    <string name="wx_snow_grains">Snow grains</string>
+    <string name="wx_light_showers">Light showers</string>
+    <string name="wx_showers">Showers</string>
+    <string name="wx_heavy_showers">Heavy showers</string>
+    <string name="wx_snow_showers">Snow showers</string>
+    <string name="wx_thunderstorm">Thunderstorm</string>
+    <string name="wx_thunderstorm_hail">Thunderstorm, hail</string>
+    <string name="wx_feels_like">Feels like %1$d°C</string>
 </resources>

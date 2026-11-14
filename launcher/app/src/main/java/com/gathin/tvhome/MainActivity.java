@@ -1012,7 +1012,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         btnSettings.setOnClickListener(v -> {
             if (launcherSettingsButton) startActivityForResult(
-                    new Intent(this, LauncherSettingsActivity.class), LAUNCHER_SETTINGS_REQUEST);
+                    new Intent(this, CouchSettingsActivity.class), LAUNCHER_SETTINGS_REQUEST);
             else open(systemIntent(Settings.ACTION_SETTINGS));
         });
         btnReorder = findViewById(R.id.btnReorder);
@@ -1218,7 +1218,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private boolean openLauncherSettingsIfAsked(Intent intent) {
         if (intent == null || !ACTION_LAUNCHER_SETTINGS.equals(intent.getAction())) return false;
         setIntent(new Intent(Intent.ACTION_MAIN));
-        startActivityForResult(new Intent(this, LauncherSettingsActivity.class), LAUNCHER_SETTINGS_REQUEST);
+        startActivityForResult(new Intent(this, CouchSettingsActivity.class), LAUNCHER_SETTINGS_REQUEST);
         return true;
     }
 
@@ -1346,15 +1346,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     /**
-     * Only "Reorder tiles" in Launcher settings still answers with a result: Home rebuilds (the saved choices are
+     * Only "Reorder apps" in Home settings still answers with a result: Home rebuilds (the saved choices are
      * reloaded) and then enters reorder mode. Every other change is picked up in onResume through the change count.
      */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == LAUNCHER_SETTINGS_REQUEST && resultCode == RESULT_OK
-                && data != null && data.getBooleanExtra(LauncherSettingsActivity.EXTRA_REORDER, false)) {
-            getIntent().putExtra(LauncherSettingsActivity.EXTRA_REORDER, true);
+                && data != null && data.getBooleanExtra(CouchSettingsActivity.EXTRA_REORDER, false)) {
+            getIntent().putExtra(CouchSettingsActivity.EXTRA_REORDER, true);
             // The old activity must not consume the pending action, or rebuild a second time in onResume.
             settingsRecreationPending = true;
             settingsRevision = settingsRevision();
@@ -1364,8 +1364,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     private void startPendingSettingsReorder() {
         if (settingsRecreationPending || !tilesReady || !hasWindowFocus() || isFinishing()
-                || !getIntent().getBooleanExtra(LauncherSettingsActivity.EXTRA_REORDER, false)) return;
-        getIntent().removeExtra(LauncherSettingsActivity.EXTRA_REORDER);
+                || !getIntent().getBooleanExtra(CouchSettingsActivity.EXTRA_REORDER, false)) return;
+        getIntent().removeExtra(CouchSettingsActivity.EXTRA_REORDER);
         toggleReorder();
     }
 
@@ -2742,10 +2742,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private void showWeather(Weather.Reading r) {
         if (r == null || weather == null) return;
         if (sceneView != null) {
-            sceneView.setWeather(Weather.brief(r), Weather.icon(r));
+            sceneView.setWeather(Weather.brief(this, r), Weather.icon(r));
             return;
         }
-        weather.setText(Weather.line(weatherPlace, r));
+        weather.setText(Weather.line(this, weatherPlace, r));
         weather.setVisibility(View.VISIBLE);
     }
 
@@ -4246,7 +4246,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         addInputRow(rows, popup, R.drawable.ic_swap_vert, getString(R.string.reorder), -1, this::toggleReorder);
         if (launcherSettingsButton) {
             addInputRow(rows, popup, R.drawable.ic_home_settings_pill, getString(R.string.launcher_settings), -1,
-                    () -> startActivityForResult(new Intent(this, LauncherSettingsActivity.class), LAUNCHER_SETTINGS_REQUEST));
+                    () -> startActivityForResult(new Intent(this, CouchSettingsActivity.class), LAUNCHER_SETTINGS_REQUEST));
         } else {
             addInputRow(rows, popup, R.drawable.ic_settings, getString(R.string.settings), -1,
                     () -> open(systemIntent(Settings.ACTION_SETTINGS)));
@@ -4294,7 +4294,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         LinearLayout rows = panel.findViewById(R.id.rows);
         PopupWindow popup = glassPopup(panel, (int) (200 * density));
         if (!launcherSettingsButton) addSettingsMenuRow(rows, popup, R.string.launcher_settings, () -> startActivityForResult(
-                new Intent(this, LauncherSettingsActivity.class), LAUNCHER_SETTINGS_REQUEST));
+                new Intent(this, CouchSettingsActivity.class), LAUNCHER_SETTINGS_REQUEST));
         // Firmware that ships its own settings app next to the AOSP one (Xiaomi China is one): the
         // vendor app holds pages the AOSP settings has no row for, such as Account & Security with
         // the ADB switch. Offered here only while one of them is installed.

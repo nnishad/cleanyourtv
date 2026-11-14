@@ -34,8 +34,6 @@
     <color name="glass_rest_top">#26FFFFFF</color>
     <color name="glass_rest_bottom">#12FFFFFF</color>
     <color name="glass_rest_rim">#33FFFFFF</color>
-    <color name="glass_raised_top">#38FFFFFF</color>
-    <color name="glass_raised_bottom">#1AFFFFFF</color>
     <color name="glass_focus_top">#5CFFFFFF</color>
     <color name="glass_focus_bottom">#26FFFFFF</color>
     <color name="glass_focus_sheen">#40FFFFFF</color>
