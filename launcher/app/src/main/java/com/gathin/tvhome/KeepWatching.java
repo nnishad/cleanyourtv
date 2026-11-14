@@ -77,6 +77,7 @@ final class KeepWatching {
     private final File cacheDir;
     private final float density;
     private List<Item> items = new ArrayList<>();
+    private int cardWidth;   // 0: the layout's own width
     private String signature = "";
     private int lastWant = -1;
     private boolean swept;
@@ -126,6 +127,19 @@ final class KeepWatching {
         if (lp.topMargin != top) {
             lp.topMargin = top;
             block.setLayoutParams(lp);
+        }
+    }
+
+    /** Lines the row up with the dock band: it starts at the band's left edge, ends at its right, and three cards fill it. */
+    void alignTo(int left, int right) {
+        int gap = (int) (10 * density);
+        int width = (right - left - 2 * gap) / 3;
+        int wrap = ((View) block.getParent()).getWidth();
+        if (width <= 0 || wrap <= 0) return;
+        block.setPaddingRelative(left, block.getPaddingTop(), Math.max(0, wrap - right), block.getPaddingBottom());
+        if (width != cardWidth) {
+            cardWidth = width;
+            list.getAdapter().notifyDataSetChanged();
         }
     }
 
@@ -344,6 +358,7 @@ final class KeepWatching {
             h.progress.setProgress(it.progress);
             Bitmap b = it.art == null ? null : thumbs.get(it.art);
             h.thumb.setImageBitmap(b);
+            if (cardWidth > 0) h.itemView.getLayoutParams().width = cardWidth;
             h.itemView.setOnClickListener(v -> open(it));
         }
 

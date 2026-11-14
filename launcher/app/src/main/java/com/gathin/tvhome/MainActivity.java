@@ -210,6 +210,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      *  scene and its clock; any key brings them back and is not passed on. 0 is off. */
     private long hideRowsMs;
     private boolean rowsHidden;
+    /** Couch-tv port (Config.couchMenus): the gear opens Home settings / TV settings, and Inputs ends with Bluetooth and Network. */
+    private boolean couchMenus;
     private int swallowKey;
     private View rowsWrap, topButtonsView;
     private final Runnable hideRows = this::hideRowsNow;
@@ -521,6 +523,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         getWindow().setBackgroundDrawable(null);
         wallpaperPlayer = new WallpaperPlayer(this, root, cfg);
         hideRowsMs = cfg.hideRowsIdleSeconds * 1000L;
+        couchMenus = cfg.couchMenus;
         rowsWrap = findViewById(R.id.rowsWrap);
         topButtonsView = findViewById(R.id.topButtons);
         if (cfg.scenes) {
@@ -599,7 +602,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         weatherPlace = getString(R.string.weather_place).trim();
         weatherLat = getString(R.string.latitude).trim();
         weatherLon = getString(R.string.longitude).trim();
-        weatherOn = getResources().getBoolean(R.bool.show_weather) && !weatherPlace.isEmpty()
+        weatherOn = getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE)
+                .getBoolean("show_weather", getResources().getBoolean(R.bool.show_weather)) && !weatherPlace.isEmpty()
                 && !weatherLat.isEmpty() && !weatherLon.isEmpty();
         raceCalendar = cfg.raceCalendar;
         racePanel = findViewById(R.id.racePanel);
@@ -722,8 +726,21 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             public void onChildViewDetachedFromWindow(@NonNull View v) {
             }
         });
-        if (dockRow) grid.addItemDecoration(new DockDecoration(COLUMNS, density, cinematic, cfg.alwaysShowNames, cfg.dockOpacity, cfg.dockGlass, cfg.dockEvenPadding, cfg.dockBand,
-                singleRow, cfg.dockBandAll));
+        if (dockRow) {
+            DockDecoration deco = new DockDecoration(COLUMNS, density, cinematic, cfg.alwaysShowNames, cfg.dockOpacity, cfg.dockGlass, cfg.dockEvenPadding, cfg.dockBand,
+                    singleRow, cfg.dockBandAll);
+            if (cfg.dockTight) {
+                deco.setTight(true);
+                // The cards and the top buttons share the band's edges.
+                deco.setEdgeListener((left, right) -> {
+                    if (keepWatching != null) keepWatching.alignTo(Math.round(left), Math.round(right));
+                    // The band's edges are in the grid's coordinates and the buttons' in their row's; both start at the
+                    // screen's side margin, so the two compare directly.
+                    topButtonsView.setTranslationX(Math.min(0f, right - topButtonsView.getRight()));
+                });
+            }
+            grid.addItemDecoration(deco);
+        }
         if (cfg.fadeRows) TopFade.attach(grid, 48 * density);
         // Reduced motion: the tiles are simply there, with no entrance (reloadApps skips it there too).
         if (animations && !reducedMotion) {
@@ -942,6 +959,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             showSettingsMenu();
             return true;
         });
+        if (couchMenus) btnSettings.setOnClickListener(v -> showGearMenu());
 
         // Keep focus on the top bar at its ends and at the top: Android's focus finder would otherwise
         // jump to a tile far below when there is nothing in that direction.
@@ -3715,6 +3733,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             final Intent liveTvIntent = liveTv;
             addInputRow(rows, popup, R.drawable.ic_livetv, getString(R.string.live_tv), -1, () -> open(liveTvIntent));
         }
+        if (couchMenus) {
+            // As in couch-tv: the TV's inputs, then the two settings people look for from here.
+            if (rows.getChildCount() > 0) addSeparator(rows);
+            addInputRow(rows, popup, R.drawable.ic_bluetooth, "Bluetooth", -1,
+                    () -> open(systemIntent(Settings.ACTION_BLUETOOTH_SETTINGS)));
+            addInputRow(rows, popup, R.drawable.ic_wifi, "Network", -1,
+                    () -> open(systemIntent(Settings.ACTION_WIFI_SETTINGS)));
+        }
         if (rows.getChildCount() == 0) {
             Toast.makeText(this, R.string.no_inputs, Toast.LENGTH_SHORT).show();
             return;
@@ -3862,6 +3888,35 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         popup.setWidth(Math.max((int) (220 * density), Math.min(panel.getMeasuredWidth(), (int) (360 * density))));
         dropIn(popup, panel, anchor, getResources().getBoolean(R.bool.rtl_menu_bar) ? Gravity.START : Gravity.END);
         rows.getChildAt(0).requestFocus();
+    }
+
+    /** couch_menus: the gear's menu, Home settings (this launcher's) and TV settings (Android's), as in couch-tv. */
+    private void showGearMenu() {
+        View anchor = findViewById(R.id.btnSettings);
+        View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
+        LinearLayout rows = panel.findViewById(R.id.rows);
+        PopupWindow popup = glassPopup(panel, (int) (320 * density));
+        addGearRow(rows, popup, R.drawable.ic_home_settings_pill, "Home settings",
+                "Scenes, rows, weather and apps",
+                () -> startActivityForResult(new Intent(this, CouchSettingsActivity.class), LAUNCHER_SETTINGS_REQUEST));
+        addGearRow(rows, popup, R.drawable.ic_settings, "TV settings",
+                "Wi-Fi, picture, sound and the rest of the TV", () -> open(systemIntent(Settings.ACTION_SETTINGS)));
+        panel.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+        popup.setWidth(Math.max((int) (320 * density), Math.min(panel.getMeasuredWidth(), (int) (420 * density))));
+        dropIn(popup, panel, anchor, getResources().getBoolean(R.bool.rtl_menu_bar) ? Gravity.START : Gravity.END);
+        rows.getChildAt(0).requestFocus();
+    }
+
+    private void addGearRow(LinearLayout rows, PopupWindow popup, int iconRes, String title, String subtitle, Runnable action) {
+        View row = getLayoutInflater().inflate(R.layout.item_gear_row, rows, false);
+        ((ImageView) row.findViewById(R.id.icon)).setImageResource(iconRes);
+        ((TextView) row.findViewById(R.id.title)).setText(title);
+        ((TextView) row.findViewById(R.id.subtitle)).setText(subtitle);
+        row.setOnClickListener(v -> {
+            popup.dismiss();
+            action.run();
+        });
+        rows.addView(row);
     }
 
     /** The header opens launcher settings directly; hold OK keeps the extra home actions available. */

@@ -39,6 +39,9 @@
             <action android:name="android.settings.WIFI_SETTINGS" />
         </intent>
         <intent>
+            <action android:name="android.settings.BLUETOOTH_SETTINGS" />
+        </intent>
+        <intent>
             <action android:name="android.settings.DISPLAY_SETTINGS" />
         </intent>
         <intent>
@@ -112,6 +115,13 @@
             </intent-filter>
         </activity>
 
+        <!-- Couch-tv port, couch_menus: the Home settings screen the gear opens. -->
+        <activity
+            android:name=".CouchSettingsActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:screenOrientation="landscape"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar.Fullscreen" />
         <activity
             android:name=".LauncherSettingsActivity"
             android:exported="false"

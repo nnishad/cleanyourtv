@@ -1,4 +1,5 @@
 {
+  "couch_menus": true,
   "scenes": true,
   "watch_row": true,
   "hide_rows_idle_seconds": 0,
@@ -40,5 +41,8 @@
     "com.google.android.videos",
     "com.google.android.youtube.tvmusic",
     "com.google.android.play.games"
-  ]
+  ],
+  "icon_only_inputs": false,
+  "hide_tile_names": true,
+  "dock_tight": true
 }

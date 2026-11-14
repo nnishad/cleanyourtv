@@ -253,6 +253,12 @@ final class Config {
     /** Couch-tv port, all off unless a theme turns them on: the scenes look (SceneView; "scene" pins one of its five), the
      *  Keep watching row (KeepWatching) and how long Home sits untouched before the rows fade out (0 = never). */
     boolean scenes, watchRow;
+    /** The gear opens Home settings / TV settings and the Inputs list ends with Bluetooth and Network, as in couch-tv. */
+    boolean couchMenus;
+    /** No app names: not under the focused tile, not inside icon tiles (the icons say it); tiles centre their icon. */
+    boolean hideTileNames;
+    /** The dock band hugs its tiles (small gaps, small corners) and the rows above and beside it line up with its edges. */
+    boolean dockTight;
     String scene = "";
     int hideRowsIdleSeconds;
 
@@ -681,6 +687,7 @@ final class Config {
         int dockOpacity = json == null ? 100 : integer(json, "dock_opacity", 100, 30, 100);
         dockOpacity = chosenDockOpacity(choices.getInt(DOCK_OPACITY_KEY, -1), dockOpacity);
         clockFormat = choices.getString(CLOCK_FORMAT_KEY, clockFormat);
+        idleClockMinutes = choices.getInt("home_idle_clock_minutes", idleClockMinutes);   // Home settings
         String wallpaperOrder = json == null ? WallpaperRotation.ORDER_SHUFFLE
                 : string(json, "wallpaper_order", WallpaperRotation.ORDER_SHUFFLE);
         // An unknown order must not silently change how an existing collection rotates.
@@ -722,10 +729,21 @@ final class Config {
                 dateBelowClock, vpnPill, locale, powerOnHomeAlways, inputsConnectedOnly, inputsCecStateOnly,
                 Math.max(0, Math.min(600, openOnStartNetworkWait)), openOnStartOnWake, iconOnlyVpn, clockFormat, backOpensClock, glowSnap);
         if (json != null) {
+            built.couchMenus = bool(json, "couch_menus", false);
+            built.hideTileNames = bool(json, "hide_tile_names", false);
+            built.dockTight = bool(json, "dock_tight", false);
             built.scenes = bool(json, "scenes", false);
             built.watchRow = bool(json, "watch_row", false);
             built.scene = string(json, "scene", "").trim();
             built.hideRowsIdleSeconds = integer(json, "hide_rows_idle_seconds", 0, 0, 3600);
+        }
+        // What was chosen in Home settings on the TV wins over the theme (a new theme clears these, see syncThemeChoices).
+        if (choices.contains("hide_tile_names")) built.hideTileNames = choices.getBoolean("hide_tile_names", built.hideTileNames);
+        if (choices.contains("scenes")) built.scenes = choices.getBoolean("scenes", built.scenes);
+        if (choices.contains("scene")) built.scene = choices.getString("scene", built.scene);
+        if (choices.contains("watch_row")) built.watchRow = choices.getBoolean("watch_row", built.watchRow);
+        if (choices.contains("hide_rows_idle_seconds")) {
+            built.hideRowsIdleSeconds = choices.getInt("hide_rows_idle_seconds", built.hideRowsIdleSeconds);
         }
         return built;
     }
@@ -772,12 +790,21 @@ final class Config {
             if (!"absent".equals(token)) editor.remove("columns").remove("animations")
                     .remove("advanced_effects").remove(ROWS_BELOW_DOCK_KEY).remove(WALLPAPER_CHOICE_KEY)
                     .remove(DOCK_OPACITY_KEY).remove(CLOCK_FORMAT_KEY);
+            if (!"absent".equals(token)) clearHomeSettings(editor);
             editor.putString(THEME_SIGNATURE_KEY, signature).commit();
         } else if (!seen.equals(signature)) {
-            choices.edit().remove("columns").remove("animations").remove("advanced_effects")
+            SharedPreferences.Editor editor = choices.edit().remove("columns").remove("animations").remove("advanced_effects")
                     .remove(ROWS_BELOW_DOCK_KEY).remove(WALLPAPER_CHOICE_KEY).remove(DOCK_OPACITY_KEY)
-                    .remove(CLOCK_FORMAT_KEY).putString(THEME_SIGNATURE_KEY, signature).commit();
+                    .remove(CLOCK_FORMAT_KEY);
+            clearHomeSettings(editor);
+            editor.putString(THEME_SIGNATURE_KEY, signature).commit();
         }
+    }
+
+    /** The couch-tv Home settings (CouchSettingsActivity): a new theme starts from what it says. */
+    private static void clearHomeSettings(SharedPreferences.Editor editor) {
+        editor.remove("scenes").remove("scene").remove("watch_row").remove("hide_rows_idle_seconds")
+                .remove("home_idle_clock_minutes").remove("show_weather").remove("hide_tile_names");
     }
 
     /** The dock band opacity chosen in Launcher settings, or the theme's when none (or an out-of-range one) is saved. */
