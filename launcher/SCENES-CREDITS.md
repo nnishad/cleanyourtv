@@ -1,7 +1,7 @@
 # Credits for the scene pictures
 
 The scenes are in `app/src/main/assets/scenes/` (`d_<place>.webp`, with a blurred `-glass.jpg` for the clock's fill and
-a `-mask.png` for the scenery in front of the digits). All fourteen were generated with Google Gemini for this
+a `-mask.png` for the scenery in front of the digits). All thirteen were generated with Google Gemini for this
 project, from prompts describing each real place at its time of day, and then cropped to 16:9 at 1920x1080. They
 show real places but are not photographs of them.
 
@@ -17,7 +17,6 @@ show real places but are not photographs of them.
 | Rakotz bridge | Rakotzbrücke, Kromlau, Germany | 12 pm to 3 pm |
 | Jaisalmer | The Thar desert and Jaisalmer fort, Rajasthan, India | 3 pm to 6 pm |
 | Lauterbrunnen | Lauterbrunnen valley, Switzerland | 3 pm to 6 pm |
-| Marine Drive | Marine Drive, Mumbai, India | 6 pm to 9 pm |
 | Worli | The Worli skyline and the Sea Link, Mumbai, India | 6 pm to 9 pm |
 | Rainy New York | A Manhattan avenue in the rain | 6 pm to 9 pm |
 | Varanasi ghats | The ghats of Varanasi, Uttar Pradesh, India | 9 pm to 12 am |

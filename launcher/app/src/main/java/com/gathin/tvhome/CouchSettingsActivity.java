@@ -50,8 +50,8 @@ public final class CouchSettingsActivity extends Activity {
             R.drawable.ic_settings_apps, R.drawable.ic_settings_motion, R.drawable.ic_settings_weather,
             R.drawable.ic_settings_about};
     private static final int PAGE_NONE = 0, PAGE_BACKGROUNDS = 1, PAGE_WALLPAPER = 2, PAGE_OPEN_ON_START = 3, PAGE_PLACE = 4;
-    private static final String[] SCENE_IDS = {"", "random", "d_chandratal", "d_pangong", "d_munnar", "d_bachalpsee", "d_bled", "d_autumn", "d_maldives", "d_rakotz", "d_jaisalmer", "d_lauterbrunnen", "d_marinedrive", "d_worli", "d_nyc", "d_varanasi"};
-    private static final int[] SCENE_NAMES = {R.string.hs_scene_time, R.string.hs_scene_random, R.string.hs_scene_d_chandratal, R.string.hs_scene_d_pangong, R.string.hs_scene_d_munnar, R.string.hs_scene_d_bachalpsee, R.string.hs_scene_d_bled, R.string.hs_scene_d_autumn, R.string.hs_scene_d_maldives, R.string.hs_scene_d_rakotz, R.string.hs_scene_d_jaisalmer, R.string.hs_scene_d_lauterbrunnen, R.string.hs_scene_d_marinedrive, R.string.hs_scene_d_worli, R.string.hs_scene_d_nyc, R.string.hs_scene_d_varanasi};
+    private static final String[] SCENE_IDS = {"", "random", "d_chandratal", "d_pangong", "d_munnar", "d_bachalpsee", "d_bled", "d_autumn", "d_maldives", "d_rakotz", "d_jaisalmer", "d_lauterbrunnen", "d_worli", "d_nyc", "d_varanasi"};
+    private static final int[] SCENE_NAMES = {R.string.hs_scene_time, R.string.hs_scene_random, R.string.hs_scene_d_chandratal, R.string.hs_scene_d_pangong, R.string.hs_scene_d_munnar, R.string.hs_scene_d_bachalpsee, R.string.hs_scene_d_bled, R.string.hs_scene_d_autumn, R.string.hs_scene_d_maldives, R.string.hs_scene_d_rakotz, R.string.hs_scene_d_jaisalmer, R.string.hs_scene_d_lauterbrunnen, R.string.hs_scene_d_worli, R.string.hs_scene_d_nyc, R.string.hs_scene_d_varanasi};
     private static final String[] CLOCK_IDS = {"system", "12", "24"};
     private static final int[] CLOCK_NAMES = {R.string.hs_clock_tv, R.string.hs_clock_12, R.string.hs_clock_24};
     private static final int[] HIDE_SECONDS = {0, 30, 60, 120, 300};

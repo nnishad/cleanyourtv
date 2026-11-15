@@ -5,10 +5,10 @@
 A photograph fills Home and the clock is part of it: large glass digits stand behind the nearer scenery, so peaks,
 ridges, temples and city towers cross their lower half, and the top of every digit stays clear so the time still reads.
 
-- **Fourteen scenes of real places** that follow the clock, one or two for every three hours: Chandratal under the
+- **Thirteen scenes of real places** that follow the clock, one or two for every three hours: Chandratal under the
   Milky Way after midnight, Pangong Lake before dawn, Munnar's tea hills and Bachalpsee in the morning, Lake Bled and an
   autumn boulevard before noon, the Maldives and the Rakotz bridge after it, Jaisalmer and Lauterbrunnen in the
-  afternoon, Marine Drive, Worli and a rainy New York at dusk, the Varanasi ghats at night. Or a different one each
+  afternoon, Worli and a rainy New York at dusk, the Varanasi ghats at night. Or a different one each
   start, or one you pin.
 - **A clock for any picture:** the launcher reads each picture and picks the digits' tint, edge and shadow from it, so
   the time reads on a pale sky as well as a night one.

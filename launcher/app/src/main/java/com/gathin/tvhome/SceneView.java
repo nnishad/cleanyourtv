@@ -170,7 +170,6 @@ final class SceneView extends View {
             auto("d_bled", true, 200, 420),                       // 9-12 Lake Bled: the Alps and the island church
             auto("d_maldives", true, 200, 420),                   // 12-15 Maldives lagoon: the digits' feet under water
             auto("d_jaisalmer", true, 200, 420),                  // 15-18 Jaisalmer: the fort and khejri trees in front
-            auto("d_marinedrive", true, 167, 420),                // 18-21 Marine Drive at dusk: the towers in front
             auto("d_varanasi", true, 130, 420),                   // 21-24 Varanasi ghats: the temple spires in front
             // More of the day set, from the person's own reference photos, so each part of the day has a second scene
             // and the picture differs from one day to the next.
@@ -197,7 +196,7 @@ final class SceneView extends View {
             {"d_bled", "d_autumn"},                                             // 9 to 12
             {"d_maldives", "d_rakotz"},                                         // 12 to 15
             {"d_jaisalmer", "d_lauterbrunnen"},                                 // 15 to 18
-            {"d_marinedrive", "d_worli", "d_nyc"},                              // 18 to 21
+            {"d_worli", "d_nyc"},                                               // 18 to 21
             {"d_varanasi"},                                                     // 21 to 24
     };
 
