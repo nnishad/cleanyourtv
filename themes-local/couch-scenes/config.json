@@ -44,5 +44,6 @@
   ],
   "icon_only_inputs": false,
   "hide_tile_names": true,
-  "dock_tight": true
+  "dock_tight": true,
+  "scenes_off": ""
 }

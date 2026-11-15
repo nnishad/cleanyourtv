@@ -217,6 +217,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private int swallowKey;
     private View rowsWrap, topButtonsView;
     private final Runnable hideRows = this::hideRowsNow;
+    private static final long HIDE_FADE_MS = 1600L;
     /** The tvOS inactivity cue (design/REVAMP-PLAN.md, 3.2): after a while without a key, all but the focused control dim. */
     private static final long IDLE_DIM_MS = 20_000L;
     private static final float IDLE_DIM_ALPHA = 0.6f;
@@ -1497,8 +1498,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         rowsHidden = true;
         hideGlass();
-        rowsWrap.animate().alpha(0f).setDuration(500).start();
-        topButtonsView.animate().alpha(0f).setDuration(500).start();
+        // One slow fade from full strength to gone, so it reads as the screen settling rather than a flash.
+        long fade = reducedMotion || !animations ? Motion.REDUCED_MS : HIDE_FADE_MS;
+        // The rows sink a little as they go and the buttons lift, each on its own layer: the compositor fades a
+        // picture of them, and the scene behind is not redrawn.
+        float drift = reducedMotion || !animations ? 0f : 14 * density;
+        rowsWrap.animate().alpha(0f).translationY(drift).setDuration(fade).setInterpolator(Motion.MOVE).withLayer().start();
+        topButtonsView.animate().alpha(0f).translationY(-drift / 2f).setDuration(fade).setInterpolator(Motion.MOVE).withLayer().start();
         if (contextLine != null) showContext("");
         root.removeCallbacks(turnScene);
         root.postDelayed(turnScene, SCENE_TURN_MS);
@@ -1664,7 +1670,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     private void armIdleDim() {
         root.removeCallbacks(idleDim);
-        if (resumed && animations) root.postDelayed(idleDim, IDLE_DIM_MS);
+        // With hide_rows_idle_seconds on, the rows stay at full strength until they fade away: no half-dim between.
+        if (resumed && animations && hideRowsMs <= 0) root.postDelayed(idleDim, IDLE_DIM_MS);
     }
 
     /** Everything focusable on Home but the focused control, to IDLE_DIM_ALPHA; the focused one stays as it is. */
@@ -1706,8 +1713,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private void showRows() {
         rowsHidden = false;
         root.removeCallbacks(turnScene);
-        rowsWrap.animate().alpha(1f).setDuration(150).start();
-        topButtonsView.animate().alpha(1f).setDuration(150).start();
+        // Back in place at once (the dock's highlight is measured from where the tiles are), then a short eased fade up.
+        rowsWrap.setTranslationY(0f);
+        topButtonsView.setTranslationY(0f);
+        long rise = reducedMotion || !animations ? Motion.REDUCED_MS : 260L;
+        rowsWrap.animate().alpha(1f).translationY(0f).setDuration(rise).setInterpolator(Motion.ENTER).withLayer().start();
+        topButtonsView.animate().alpha(1f).translationY(0f).setDuration(rise).setInterpolator(Motion.ENTER).withLayer().start();
         View focused = getCurrentFocus();
         int tile = focusedTilePosition();
         if (focused != null && tile >= 0) onTileFocused(tile, focused);   // the dock's highlight comes back with it
@@ -1734,8 +1745,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (idleDimmed) idleUndim();
         if (rowsHidden) {   // leaving Home: it comes back with its rows
             rowsHidden = false;
+            rowsWrap.animate().cancel();   // a fade still running would finish after this and leave them hidden
+            topButtonsView.animate().cancel();
             rowsWrap.setAlpha(1f);
+            rowsWrap.setTranslationY(0f);
             topButtonsView.setAlpha(1f);
+            topButtonsView.setTranslationY(0f);
         }
         endReorder();   // Home or another app while reordering keeps the order so far
         wallpaperPlayer.stop();

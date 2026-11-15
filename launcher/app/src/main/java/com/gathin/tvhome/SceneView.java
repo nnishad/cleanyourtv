@@ -13,6 +13,7 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Shader;
+import android.graphics.Path;
 import android.graphics.Typeface;
 import android.os.Handler;
 import android.os.Looper;
@@ -47,6 +48,8 @@ final class SceneView extends View {
         final float[] shadeAt;
         /** The photo is "<id>.webp", stored losslessly, and the cut-out is the photo through "<id>-mask.png"'s alpha. */
         final boolean lossless;
+        /** The digits', the date line's and the top shade's tones are read from the picture itself (Tone), not set here. */
+        boolean adaptive;
 
         Spec(String id, boolean cutout, float top, float size, float left, float fillBright, float fillSat,
              float fillAlpha, float photoBright, int rimStroke, int rimFill, boolean sheen, int[] shade, float[] shadeAt) {
@@ -75,64 +78,127 @@ final class SceneView extends View {
         }
     }
 
+    /**
+     * What a picture asks of the clock that stands in it, read from the picture: how bright it is behind the digits,
+     * behind the date line and behind the top buttons, and how busy it is behind the digits. Any picture can then be
+     * a scene: pale sky gets dark glass digits and a dark date line, a dark sky bright glass, a middling one frosted
+     * white, a busy one (lit buildings) a firmer frost and edge, and a pale top a shade under the white buttons.
+     */
+    private static final class Tone {
+        final float fillBright;
+        final float fillSat;
+        final int rimStroke, rimFill, shadow, captionColor, captionShadow;
+        final int[] shade;
+        final float[] shadeAt;
+
+        private Tone(float behind, float busy, float line, float top) {
+            if (behind > 0.62f) {            // pale: the picture's own colour, deeper, so it stays a tint of the sky
+                fillBright = Math.max(0.42f, 0.7f - (behind - 0.62f) * 1.1f);
+                fillSat = 1.45f;
+                rimStroke = 0xB3FFFFFF;
+                rimFill = busy > 0.2f ? 0x26000000 : 0;
+                shadow = 0x2E000000;
+            } else if (behind < 0.3f) {      // dark: the glass lit up, with a veil of white so it has a body
+                fillBright = 1.7f;
+                fillSat = 1f;
+                rimStroke = busy > 0.2f ? 0xD9FFFFFF : 0xB3FFFFFF;
+                rimFill = busy > 0.2f ? 0x73FFFFFF : 0x47FFFFFF;
+                shadow = 0x33000000;
+            } else {                         // between: frosted white, more of it as the picture gets brighter or busier
+                fillBright = 1.15f;
+                fillSat = 1f;
+                float frost = 0.22f + (behind - 0.3f) * 0.8f + (busy > 0.2f ? 0.18f : 0f);
+                rimStroke = 0xCCFFFFFF;
+                rimFill = (Math.round(Math.min(0.62f, frost) * 255) << 24) | 0xFFFFFF;
+                shadow = 0x40000000;
+            }
+            boolean paleLine = line > 0.66f;
+            captionColor = paleLine ? 0xE610161C : 0xEBFFFFFF;
+            captionShadow = paleLine ? 0x66FFFFFF : 0xB3000000;
+            float dim = Math.min(0.42f, Math.max(0f, (top - 0.42f) * 0.95f));   // the top buttons are white
+            shade = dim < 0.04f ? null : new int[]{Math.round(dim * 255) << 24, 0};
+            shadeAt = shade == null ? null : new float[]{0f, 0.3f};
+        }
+
+        /** Reads {@code photo} where {@code spec}'s clock, date line and the top buttons stand. One small copy of it. */
+        static Tone of(Bitmap photo, Spec spec) {
+            final int w = 96, h = 54;
+            Bitmap small = Bitmap.createScaledBitmap(photo, w, h, true);
+            int[] px = new int[w * h];
+            small.getPixels(px, 0, w, 0, 0, w, h);
+            if (small != photo) small.recycle();
+            float kx = w / 1920f, ky = h / 1080f;
+            float left = spec.left < 0 ? 560 : spec.left, right = spec.left < 0 ? 1360 : spec.left + 800;
+            float[] behind = stats(px, w, h, left * kx, (spec.top + 0.06f * spec.size) * ky, right * kx,
+                    (spec.top + BOX_BASELINE * spec.size) * ky);
+            float cl = spec.left < 0 ? 700 : spec.left, cr = spec.left < 0 ? 1220 : spec.left + 520;
+            float[] line = stats(px, w, h, cl * kx, (spec.top - 46) * ky, cr * kx, (spec.top - 4) * ky);
+            float[] top = stats(px, w, h, 1380 * kx, 50 * ky, 1900 * kx, 180 * ky);
+            return new Tone(behind[0], behind[1], line[0], top[0]);
+        }
+
+        /** Mean luminance (0 to 1) and its spread over a box of the small copy. */
+        private static float[] stats(int[] px, int w, int h, float x0, float y0, float x1, float y1) {
+            int ax = Math.max(0, Math.round(x0)), ay = Math.max(0, Math.round(y0));
+            int bx = Math.min(w, Math.max(ax + 1, Math.round(x1))), by = Math.min(h, Math.max(ay + 1, Math.round(y1)));
+            double sum = 0, sq = 0;
+            int n = 0;
+            for (int y = ay; y < by; y++) {
+                for (int x = ax; x < bx; x++) {
+                    int c = px[y * w + x];
+                    double l = (0.2126 * ((c >> 16) & 0xFF) + 0.7152 * ((c >> 8) & 0xFF) + 0.0722 * (c & 0xFF)) / 255.0;
+                    sum += l;
+                    sq += l * l;
+                    n++;
+                }
+            }
+            if (n == 0) return new float[]{0.5f, 0f};
+            double mean = sum / n;
+            return new float[]{(float) mean, (float) Math.sqrt(Math.max(0, sq / n - mean * mean))};
+        }
+    }
+
     private static final int WHITE_RIM = 0x8CFFFFFF, WHITE_FILL = 0x1AFFFFFF;
     /** A dark band at the top so the white top buttons and the date read on a pale sky. */
     private static final int[] BRIGHT_SKY = {0x59000000, 0x00000000};
     private static final Spec[] SPECS = {
-            // Golden hour: a little smaller, low enough for the volcano's tip to rise into the digits
-            new Spec("golden", true, 152, 390, -1, 1f, 1f, 1f, 1f, WHITE_RIM, WHITE_FILL, true, null, null),
-            // Waterline: the clock sits on the water, clear of the Keep watching row; no cut-out
-            new Spec("water", false, 200, 420, -1, 1f, 1f, 1f, 1f, WHITE_RIM, WHITE_FILL, true,
-                    new int[]{0x6B000C18, 0x1F000C18, 0x00000000, 0x80001428}, new float[]{0f, 0.40f, 0.52f, 1f}),
-            // Fog: a big dark clock on the left, its digits on the rows' left edge, sinking into the misty hills
-            new Spec("fog", true, 172, 470, 68, 0.46f, 0.8f, 0.8f, 1f, 0x99FFFFFF, 0, false,
-                    new int[]{0x66000000, 0x00000000}, new float[]{0f, 0.24f}),   // the top buttons are white on a pale sky
-            // Rainforest dawn: warm light at the top, the clock low enough for the ridges to cross it
-            new Spec("dawn", true, 230, 400, -1, 1f, 1f, 1f, 1f, WHITE_RIM, WHITE_FILL, true,
-                    new int[]{0x6B321C0C, 0x00321C0C}, new float[]{0f, 0.55f}),
-            // The landscapes below: 16:9 crops of the photos at the panel's 1920x1080, stored losslessly. Each clock
-            // sits on the depth plane found with a depth map, so the nearer scenery crosses the bottom of the digits.
-            // Misty valley: the peaks under the cloud rise into the digits
-            scene("valley", 160, 440, 1f, BRIGHT_SKY),
-            // Arch bridge: the clock inside the circle of the arch and its reflection, the arch and pillar in front
-            scene("bridge", 250, 380, 1.2f, null),
-            // Alpine lake: the peaks rise into the digits from below
-            scene("alpine", 140, 440, 1f, BRIGHT_SKY),
-            // Ember ridges: a sunrise haze; the snowy ridge line crosses the digits
-            scene("ember", 190, 400, 1f, null),
-            // Highland valley: the clock in the clouds, the ridge's peaks in front
-            scene("highland", 170, 420, 1f, BRIGHT_SKY),
-            // Mountain lake: the clock in the clouds over the valley, the slopes in front at both ends
-            scene("lake", 180, 440, 1f, BRIGHT_SKY),
-            // Snow ridge: behind the near snowy ridge and its trees, in front of the far range
-            scene("snow", 170, 440, 1f, BRIGHT_SKY),
-            // City at dusk: the towers rise into the digits
-            scene("city", 230, 380, 1f, null),
-            // The night scenes. Starlit peaks: the Milky Way over a snowy range, whose summits rise into the digits
-            scene("stars", 240, 440, 1.25f, null),
-            // Northern lights: the clock stands in the aurora, clear of the rocks; no cut-out
-            new Spec("aurora", false, 150, 440, -1, 1.1f, 1f, 1f, 1f, WHITE_RIM, WHITE_FILL, true, null, null, true),
-            // Lakeside stars: a tarn under the Milky Way; the hills at both sides cross the ends of the clock
-            scene("tarn", 180, 440, 1.2f, null),
-            // Old town lights: a lit castle hotel at dusk, its roofs and towers rising into the digits. The digits stand
-            // over lit walls, where plain glass (the picture, blurred) vanishes: theirs is frosted, with a good part of
-            // white in it and a firmer rim. The pale dusk sky gets the top shade.
-            new Spec("oldtown", true, 150, 440, -1, 1.15f, 0.8f, 1f, 1f, 0xD9FFFFFF, 0x73FFFFFF, true, BRIGHT_SKY,
-                    new float[]{0f, 0.3f}, true),
+            // The day set (d_*): one real place for each three hours, made for the clock: open sky where the digits
+            // stand and the place's own skyline crossing their feet. The cut-outs follow each skyline.
+            auto("d_chandratal", true, 200, 420),                 // 0-3 Chandratal, Spiti: under the Milky Way
+            auto("d_pangong", true, 200, 420),                    // 3-6 Pangong Lake before dawn: the range in front
+            auto("d_munnar", true, 200, 420),                     // 6-9 Munnar tea hills at sunrise: the silver oaks
+            auto("d_bled", true, 200, 420),                       // 9-12 Lake Bled: the Alps and the island church
+            auto("d_maldives", true, 200, 420),                   // 12-15 Maldives lagoon: the digits' feet under water
+            auto("d_jaisalmer", true, 200, 420),                  // 15-18 Jaisalmer: the fort and khejri trees in front
+            auto("d_marinedrive", true, 167, 420),                // 18-21 Marine Drive at dusk: the towers in front
+            auto("d_varanasi", true, 130, 420),                   // 21-24 Varanasi ghats: the temple spires in front
+            // More of the day set, from the person's own reference photos, so each part of the day has a second scene
+            // and the picture differs from one day to the next.
+            auto("d_bachalpsee", true, 112, 420),                 // 6-9 Bachalpsee: the snowy peaks in front
+            auto("d_autumn", true, 200, 420),                     // 9-12 an autumn boulevard: the rooftops and trees in front, the hazy skyline behind
+            auto("d_rakotz", true, 300, 300),                     // 12-15 Rakotz bridge: the clock inside the arch's circle
+            auto("d_lauterbrunnen", true, 165, 420),              // 15-18 Lauterbrunnen: the clouded ridges in front
+            auto("d_worli", true, 200, 420),                      // 18-21 Worli at sunset: the towers in front
+            auto("d_nyc", false, 110, 420),                       // 18-21 a rainy New York avenue: no cut-out, the towers fill both sides
     };
 
-    private static Spec scene(String id, float top, float size, float fillBright, int[] shade) {
-        return new Spec(id, true, top, size, -1, fillBright, 1f, 1f, 1f, WHITE_RIM, WHITE_FILL, true, shade,
-                shade == null ? null : new float[]{0f, 0.3f}, true);
+    /** A scene that takes its clock's tones from its own picture (Tone): only where the clock stands is given. */
+    private static Spec auto(String id, boolean cutout, float top, float size) {
+        Spec s = new Spec(id, cutout, top, size, -1, 1f, 1f, 1f, 1f, WHITE_RIM, WHITE_FILL, true, null, null, true);
+        s.adaptive = true;
+        return s;
     }
 
     /** Scenes for each part of the day; following the time shows one of them, and keeps it until the part changes. */
     private static final String[][] BY_TIME = {
-            {"dawn", "ember"},                                                  // 5 to 9: Ember ridges is a sunrise
-            {"water", "alpine", "lake", "highland", "snow", "bridge"},          // 9 to 16
-            {"golden", "city"},                                                 // 16 to 19
-            {"stars", "aurora", "tarn", "oldtown"},                             // 19 to 5
-            {"fog", "valley"},                                                  // fog or mist reported
+            {"d_chandratal"},                                                   // 0 to 3
+            {"d_pangong"},                                                      // 3 to 6
+            {"d_munnar", "d_bachalpsee"},                                       // 6 to 9
+            {"d_bled", "d_autumn"},                                             // 9 to 12
+            {"d_maldives", "d_rakotz"},                                         // 12 to 15
+            {"d_jaisalmer", "d_lauterbrunnen"},                                 // 15 to 18
+            {"d_marinedrive", "d_worli", "d_nyc"},                              // 18 to 21
+            {"d_varanasi"},                                                     // 21 to 24
     };
 
     private final Handler ui = new Handler(Looper.getMainLooper());
@@ -154,7 +220,7 @@ final class SceneView extends View {
     private final Paint fgPaint = new Paint(Paint.FILTER_BITMAP_FLAG);
     private final Paint shadePaint = new Paint();
     private final Paint scrimPaint = new Paint();
-    private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);   // the glass is a half-size blur
     private final Paint rimFill = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint rim = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint sheen = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -180,10 +246,6 @@ final class SceneView extends View {
     private int shadeFor = -1, scrimFor = -1;
     private String time = "", date = "", weather = "";
     private android.graphics.drawable.Drawable weatherIcon;
-    /** The minute before, while its digits dissolve into the new ones (clockFade 0 to 1); null otherwise. */
-    private String prevTime;
-    private float clockFade = 1f;
-    private android.animation.ValueAnimator clockAnim;
     /** Fades and dissolves are on (animations on, reduced motion off). */
     private final boolean animated;
     /** A picture laid over the scene and faded out, so a new scene dissolves in over the old one (setFader). */
@@ -221,14 +283,14 @@ final class SceneView extends View {
         is24 = ClockFormat.is24(context, cfg.clockFormat);
         Typeface serif = null, outfit = null;
         try {
-            serif = getResources().getFont(R.font.instrument_serif);
+            serif = getResources().getFont(R.font.outfit_semibold);
         } catch (RuntimeException ignored) {
         }
         try {
             outfit = getResources().getFont(R.font.outfit_medium);
         } catch (RuntimeException ignored) {
         }
-        clockFace = serif != null ? serif : Typeface.create("serif", Typeface.NORMAL);
+        clockFace = serif != null ? serif : Typeface.create("sans-serif-medium", Typeface.NORMAL);
         captionFace = outfit != null ? outfit : Typeface.DEFAULT;
         for (Paint p : new Paint[]{fill, rimFill, rim, sheen}) p.setTypeface(clockFace);
         fill.setTextSize(1000f);
@@ -236,22 +298,38 @@ final class SceneView extends View {
         digitEm = digits.height() / 1000f;
         rim.setStyle(Paint.Style.STROKE);
         fadePaint.setXfermode(new android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.DST_OUT));
+        caption.setColor(0xEBFFFFFF);
         applySpec();
         caption.setTypeface(captionFace);
-        caption.setColor(0xEBFFFFFF);
         caption.setTextAlign(Paint.Align.CENTER);
         ensureLoaded();
     }
+
+    /** The picture's own reading for an adaptive scene; null for a hand-set one, and until the picture is in. */
+    private Tone tone;
+    /** What is drawn with now: the scene's own values, or the picture's reading of them. */
+    private int rimFillNow, shadowNow, captionShadowNow = 0xB3000000;
+    private int[] shadeNow;
+    private float[] shadeAtNow;
 
     /** The paints that depend on the scene. */
     private void applySpec() {
         android.graphics.ColorFilter photo = spec.photoBright != 1f ? filter(spec.photoBright, 1f) : null;
         photoPaint.setColorFilter(photo);
         fgPaint.setColorFilter(photo);
-        fill.setColorFilter(filter(spec.fillBright, spec.fillSat));
+        Tone t = spec.adaptive ? tone : null;
+        fill.setColorFilter(filter(t != null ? t.fillBright : spec.fillBright, t != null ? t.fillSat : spec.fillSat));
         fill.setAlpha(Math.round(spec.fillAlpha * 255));
-        rimFill.setColor(spec.rimFill);
-        rim.setColor(spec.rimStroke);
+        rimFillNow = t != null ? t.rimFill : spec.rimFill;
+        rimFill.setColor(rimFillNow);
+        rim.setColor(t != null ? t.rimStroke : spec.rimStroke);
+        shadowNow = t != null ? t.shadow : 0;
+        shadeNow = t != null ? t.shade : spec.shade;
+        shadeAtNow = t != null ? t.shadeAt : spec.shadeAt;
+        int line = t != null ? t.captionColor : 0xEBFFFFFF;
+        captionShadowNow = t != null ? t.captionShadow : 0xB3000000;
+        caption.setColor(line);
+        if (weatherIcon != null) weatherIcon.setTint(line);
         shadeFor = -1;
     }
 
@@ -276,10 +354,7 @@ final class SceneView extends View {
 
     /** The part of the day now, as an index into BY_TIME: fog when it is foggy, else by the hour. */
     private static int partNow(Context ctx) {
-        Weather.Reading r = Weather.cached(ctx);
-        if (r != null && (r.code == 45 || r.code == 48) && System.currentTimeMillis() - r.at < 3 * 3600_000L) return 4;
-        int h = java.time.LocalTime.now().getHour();
-        return h >= 5 && h < 9 ? 0 : h >= 9 && h < 16 ? 1 : h >= 16 && h < 19 ? 2 : 3;
+        return java.time.LocalTime.now().getHour() / 3;   // one part for each three hours
     }
 
     /** Every scene id, in the order Home settings lists them. */
@@ -307,6 +382,8 @@ final class SceneView extends View {
     private static java.util.List<String> poolNow(Context ctx, java.util.Set<String> off) {
         java.util.List<String> on = enabled(off), out = new java.util.ArrayList<>();
         for (String id : BY_TIME[partNow(ctx)]) if (on.contains(id)) out.add(id);
+        // Every scene for this part of the day switched off: the scene for the hour, not any scene at all.
+        if (out.isEmpty()) for (String id : BY_TIME[java.time.LocalTime.now().getHour() / 3]) if (on.contains(id)) out.add(id);
         return out.isEmpty() ? on : out;
     }
 
@@ -360,7 +437,7 @@ final class SceneView extends View {
         if (iconRes != 0 && !weather.isEmpty()) {
             try {
                 weatherIcon = getContext().getDrawable(iconRes);
-                if (weatherIcon != null) weatherIcon.setTint(0xEBFFFFFF);
+                if (weatherIcon != null) weatherIcon.setTint(caption.getColor());
             } catch (RuntimeException ignored) {
             }
         }
@@ -375,6 +452,10 @@ final class SceneView extends View {
         boolean random = "random".equalsIgnoreCase(wanted);
         if ((!wanted.isEmpty() && !random) || photo == null || loading) return;
         java.util.List<String> pool = random ? enabled(off) : poolNow(getContext(), off);
+        if (!random && !pool.contains(spec.id)) {   // the three hours turned while Home sat idle
+            followTime();
+            return;
+        }
         if (pool.size() < 2) return;
         String id = another(pool, spec.id);
         cover(snapshot());
@@ -389,37 +470,15 @@ final class SceneView extends View {
     /** Time and date again, then once more on the next minute change, until pause(). */
     void refresh() {
         String now = DateTimeFormatter.ofPattern(is24 ? "HH:mm" : "h:mm").format(LocalTime.now());
-        date = DateTimeFormatter.ofPattern("EEE d MMM", Locale.getDefault()).format(LocalDate.now());
         // The minute turned while Home sat still: the old digits dissolve into the new. With someone moving about
         // the digits just change, so the dissolve's redraws never land on a focus move.
         boolean dissolve = animated && photo != null && !time.isEmpty() && !now.equals(time) && isShown()
                 && android.os.SystemClock.uptimeMillis() - lastInput > 1500L;
-        if (clockAnim != null) clockAnim.cancel();
-        if (dissolve) {
-            prevTime = time;
-            time = now;
-            clockFade = 0f;
-            clockAnim = android.animation.ValueAnimator.ofFloat(0f, 1f);
-            clockAnim.setDuration(420L);
-            clockAnim.setInterpolator(Motion.MOVE);
-            clockAnim.addUpdateListener(a -> {
-                clockFade = (float) a.getAnimatedValue();
-                invalidate();
-            });
-            clockAnim.addListener(new android.animation.AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationEnd(android.animation.Animator animation) {
-                    prevTime = null;
-                    clockFade = 1f;
-                    invalidate();
-                }
-            });
-            clockAnim.start();
-        } else {
-            prevTime = null;
-            clockFade = 1f;
-            time = now;
-        }
+        Bitmap old = dissolve ? clockBand() : null;   // taken while the old minute is still the one drawn
+        time = now;
+        date = DateTimeFormatter.ofPattern("EEE d MMM", Locale.getDefault()).format(LocalDate.now());
+        if (old != null) dissolveFrom(old);
+        else if (wanted.isEmpty() && photo != null && isShown() && LocalTime.now().getMinute() == 0) followTime();   // a new part of the day
         invalidate();
         ui.removeCallbacks(minute);
         ui.postDelayed(minute, 60_000L - System.currentTimeMillis() % 60_000L + 50L);
@@ -439,6 +498,69 @@ final class SceneView extends View {
         fader = view;
         quietOnce = quietFirst;
         if (fader != null) fader.setVisibility(GONE);
+    }
+
+    /** The band the clock and its caption stand in, in view pixels: {top, bottom}. */
+    private int[] band() {
+        float s = getWidth() / 1920f;
+        return new int[]{Math.max(0, Math.round((spec.top - 60) * s)),
+                Math.min(getHeight(), Math.round((spec.top + BOX_BASELINE * spec.size + 30) * s))};
+    }
+
+    /** The clock's band as it is drawn now, as a picture; null when there is no fader to show it in, or one is busy. */
+    private Bitmap clockBand() {
+        int w = getWidth();
+        if (w == 0 || fader == null || fader.getVisibility() == VISIBLE) return null;
+        int[] band = band();
+        if (band[1] <= band[0]) return null;
+        try {
+            Bitmap b = Bitmap.createBitmap(w, band[1] - band[0], Bitmap.Config.ARGB_8888);
+            Canvas c = new Canvas(b);
+            c.translate(0, -band[0]);
+            draw(c);
+            return b;
+        } catch (OutOfMemoryError e) {
+            return null;
+        }
+    }
+
+    /**
+     * The minute turned: the band's old picture lies over the scene, which draws the new minute once underneath,
+     * and the compositor fades the picture away. The scene is drawn once, not on every frame of the dissolve, and
+     * the digits that did not change stay as they are, the same pixels above and below.
+     */
+    private void dissolveFrom(final Bitmap old) {
+        final int top = band()[0];
+        fader.animate().cancel();
+        if (fadeBitmap != null) fadeBitmap.recycle();
+        fadeBitmap = old;
+        fader.setImageDrawable(new android.graphics.drawable.Drawable() {
+            @Override
+            public void draw(Canvas canvas) {
+                if (!old.isRecycled()) canvas.drawBitmap(old, 0, top, null);
+            }
+
+            @Override
+            public void setAlpha(int alpha) {
+            }
+
+            @Override
+            public void setColorFilter(android.graphics.ColorFilter filter) {
+            }
+
+            @Override
+            public int getOpacity() {
+                return android.graphics.PixelFormat.TRANSLUCENT;
+            }
+        });
+        fader.setAlpha(1f);
+        fader.setVisibility(VISIBLE);
+        fader.animate().alpha(0f).setStartDelay(90L).setDuration(700L).setInterpolator(Motion.MOVE).withEndAction(() -> {
+            fader.setVisibility(GONE);
+            fader.setImageDrawable(null);
+            if (fadeBitmap != null) fadeBitmap.recycle();
+            fadeBitmap = null;
+        }).start();
     }
 
     /** Runs {@code r} once the scene's pictures are in; at once when they already are. */
@@ -503,6 +625,8 @@ final class SceneView extends View {
             Bitmap g = decode(ctx, "scenes/" + spec.id + "-glass.jpg", Bitmap.Config.RGB_565, 2);   // a blur: half size is plenty
             Bitmap f = !spec.cutout ? null : spec.lossless ? throughMask(ctx, p, "scenes/" + spec.id + "-mask.png")
                     : decode(ctx, "scenes/" + spec.id + "-fg.webp", Bitmap.Config.ARGB_8888, 1);
+            final Spec read = spec;
+            final Tone t = read.adaptive && p != null ? Tone.of(p, read) : null;
             ui.post(() -> {
                 loading = false;
                 if (released) {
@@ -513,6 +637,10 @@ final class SceneView extends View {
                 glass = g;
                 cutout = f;
                 glassShader = null;
+                if (read == spec) {
+                    tone = t;
+                    applySpec();
+                }
                 invalidate();
                 uncover();
                 if (ready != null) {
@@ -597,17 +725,7 @@ final class SceneView extends View {
             c.drawColor(background);
             return;
         }
-        if (prevTime != null && clockFade < 1f) {
-            // The scene with the old minute, then the band the clock stands in again with the new one, let in by degrees.
-            drawScene(c, w, h, prevTime);
-            float s = w / 1920f;
-            int layer = c.saveLayerAlpha(0, (spec.top - 20) * s, w, (spec.top + BOX_BASELINE * spec.size + 30) * s,
-                    Math.round(clockFade * 255));
-            drawScene(c, w, h, time);
-            c.restoreToCount(layer);
-        } else {
-            drawScene(c, w, h, time);
-        }
+        drawScene(c, w, h, time);
     }
 
     /** The whole scene, with {@code shown} as its clock. */
@@ -617,9 +735,9 @@ final class SceneView extends View {
         c.drawBitmap(photo, null, dst, photoPaint);
         drawClock(c, w, h, s, shown);
         if (cutout != null) drawCutout(c, s);
-        if (spec.shade != null) {   // over the clock and the cut-out alike, so the cut-out has no edge in it
+        if (shadeNow != null) {   // over the clock and the cut-out alike, so the cut-out has no edge in it
             if (shadeFor != h) {
-                shadePaint.setShader(new LinearGradient(0, 0, 0, h, spec.shade, spec.shadeAt, Shader.TileMode.CLAMP));
+                shadePaint.setShader(new LinearGradient(0, 0, 0, h, shadeNow, shadeAtNow, Shader.TileMode.CLAMP));
                 shadeFor = h;
             }
             c.drawRect(0, 0, w, h, shadePaint);
@@ -634,15 +752,15 @@ final class SceneView extends View {
     }
 
     /**
-     * The scenery in front of the digits, but only over their lower part: over the digits it fades out from 90% of
-     * their height up to 62%, so the top of every digit always shows and any time reads, whichever peak or tower
+     * The scenery in front of the digits, but only over their lower part: over the digits it fades out from 65% of
+     * their height up to 40%, so the top of every digit always shows and any time reads, whichever peak or tower
      * stands behind it. Beside the digits the cut-out is the photo's own pixels, so cutting it away there shows
      * nothing.
      */
     private void drawCutout(Canvas c, float s) {
         int layer = c.saveLayer(0, 0, getWidth(), getHeight(), null);
         c.drawBitmap(cutout, null, dst, fgPaint);
-        float from = clockTop + 0.62f * clockH, to = clockTop + 0.9f * clockH;
+        float from = clockTop + 0.4f * clockH, to = clockTop + 0.65f * clockH;
         if (fadeFrom != from || fadeTo != to) {
             fadePaint.setShader(new LinearGradient(0, from, 0, to, 0xFF000000, 0x00000000, Shader.TileMode.CLAMP));
             fadeFrom = from;
@@ -657,7 +775,7 @@ final class SceneView extends View {
         // "Sat 14 Nov   ·   [sun] 23° Clear": the date, then the weather's small picture and its short line.
         String first = weather.isEmpty() ? date : date + "   \u00B7   ";
         caption.setTextSize(31 * s);
-        caption.setShadowLayer(8 * s, 0, 2 * s, 0xB3000000);
+        caption.setShadowLayer(8 * s, 0, 2 * s, captionShadowNow);
         caption.setTextAlign(Paint.Align.LEFT);
         float base = (spec.top - 12) * s;   // just above the digits, whatever height the scene puts them at
         float icon = weatherIcon != null ? 30 * s : 0f, gap = weatherIcon != null ? 9 * s : 0f;
@@ -701,9 +819,12 @@ final class SceneView extends View {
         clockRight = x + tw;
         clockTop = base - digitH;
         clockH = digitH;
-        c.drawText(time, x, base, fill);
-        if (spec.rimFill != 0) c.drawText(time, x, base, rimFill);
-        c.drawText(time, x, base, rim);
+        if (shadowNow != 0) fill.setShadowLayer(7 * s, 0, 3 * s, shadowNow);   // lifts frosted digits off a busy picture
+        else fill.clearShadowLayer();
+        Path digitsPath = outline(time, x, base);
+        c.drawPath(digitsPath, fill);
+        if (rimFillNow != 0) c.drawPath(digitsPath, rimFill);
+        c.drawPath(digitsPath, rim);
         if (spec.sheen) {   // linear-gradient(160deg, .55, 0 at 38%, 0 at 70%, .22) clipped to the digits
             float top = base - digitH, bottom = base;
             double a = Math.toRadians(160);
@@ -713,7 +834,24 @@ final class SceneView extends View {
             float cx = x + bw / 2f, cy = (top + bottom) / 2f;
             sheen.setShader(new LinearGradient(cx - dx * len / 2f, cy - dy * len / 2f, cx + dx * len / 2f, cy + dy * len / 2f,
                     new int[]{0x8CFFFFFF, 0x00FFFFFF, 0x00FFFFFF, 0x38FFFFFF}, new float[]{0f, 0.38f, 0.70f, 1f}, Shader.TileMode.CLAMP));
-            c.drawText(time, x, base, sheen);
+            c.drawPath(digitsPath, sheen);
         }
+    }
+
+    private final Path outlineRaw = new Path(), outlineMerged = new Path();
+    private String outlineKey;
+
+    /**
+     * The digits as one outline. A variable font builds a glyph from overlapping parts; stroked as text, the rim traced
+     * every overlap as a seam inside the digit. Merged once per minute (and size), the rim follows only the outer edge.
+     */
+    private Path outline(String text, float x, float base) {
+        String key = text + '|' + x + '|' + base + '|' + fill.getTextSize();
+        if (key.equals(outlineKey)) return outlineMerged;
+        fill.getTextPath(text, 0, text.length(), x, base, outlineRaw);
+        outlineMerged.reset();
+        if (!outlineMerged.op(outlineRaw, new Path(), Path.Op.UNION)) outlineMerged.set(outlineRaw);
+        outlineKey = key;
+        return outlineMerged;
     }
 }

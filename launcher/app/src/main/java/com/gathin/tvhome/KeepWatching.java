@@ -98,7 +98,15 @@ final class KeepWatching {
         this.listener = listener;
         this.density = activity.getResources().getDisplayMetrics().density;
         this.cacheDir = new File(activity.getCacheDir(), "kw");
-        list.setLayoutManager(new LinearLayoutManager(activity, RecyclerView.HORIZONTAL, false));
+        list.setLayoutManager(new LinearLayoutManager(activity, RecyclerView.HORIZONTAL, false) {
+            /** Sideways search that finds no card (a next card not laid out yet, or the row's end) stays in the row, never the top buttons. */
+            @Override
+            public View onFocusSearchFailed(View focused, int direction, RecyclerView.Recycler recycler, RecyclerView.State state) {
+                View found = super.onFocusSearchFailed(focused, direction, recycler, state);
+                boolean sideways = direction == View.FOCUS_LEFT || direction == View.FOCUS_RIGHT;
+                return found == null && sideways ? focused : found;
+            }
+        });
         list.setItemAnimator(null);
         list.setHasFixedSize(true);
         list.setAdapter(new Adapter());
@@ -196,14 +204,14 @@ final class KeepWatching {
     }
 
     /**
-     * Cards are 4.4 across the band, whatever their number: four whole ones, and with more than four the fifth shows
+     * Cards are 5.4 across the band, whatever their number: five whole ones, and with more than five the sixth shows
      * its first part at the band's right edge, so it is clear the row scrolls. The row clips at the band, never at
      * the screen.
      */
     private void sizeCards() {
         if (bandPx <= 0) return;
         int gap = (int) (12 * density);
-        int width = Math.round((bandPx - 4 * gap) / 4.4f);
+        int width = Math.round((bandPx - 5 * gap) / 5.4f);
         if (width > 0 && width != cardWidth) {
             cardWidth = width;
             list.getAdapter().notifyDataSetChanged();
