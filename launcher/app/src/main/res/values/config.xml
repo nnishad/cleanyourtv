@@ -473,9 +473,11 @@
          Vilnius: 54.69 and 25.28. -->
     <string name="latitude" translatable="false"></string>
     <string name="longitude" translatable="false"></string>
-    <!-- Bedroom TV patch: the weather line under the clock, for the place at latitude and longitude above.
-         show_weather false (or an empty place) removes it and stops all network use. -->
-    <bool name="show_weather">true</bool>
+    <!-- The weather line under the clock, for the place at latitude and longitude above: one small HTTPS request
+         to Open-Meteo every 30 minutes while Home is on screen. Off as shipped: it needs show_weather true, a
+         weather_place (the name shown, "Vilnius") and both coordinates, and with any of them missing the launcher
+         makes no network request at all. -->
+    <bool name="show_weather">false</bool>
     <string name="weather_place" translatable="false"></string>
 
     <!-- Cinematic top shelf: the focused dock app's artwork, softened, fills the top of the screen in its

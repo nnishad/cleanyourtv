@@ -703,6 +703,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         weatherAuto = where == null && cfg.weatherAuto && TvLocation.allowed(this);
         weatherOn = (where != null || weatherAuto) && getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE)
                 .getBoolean("show_weather", weatherAuto || WeatherPlace.onByDefault(this));
+        // Automatic weather with no city and no location access yet: Android asks the person once, on the first Home.
+        if (where == null && cfg.weatherAuto && !TvLocation.allowed(this)) askLocationOnce();
         raceCalendar = cfg.raceCalendar;
         racePanel = findViewById(R.id.racePanel);
         raceKicker = findViewById(R.id.raceKicker);
@@ -2711,6 +2713,27 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     // ---- Bedroom TV patch: weather line under the clock (Weather.java) -----------------------------
 
     /** Shows the saved reading at once, then fetches a new one when it is older than 30 minutes. */
+    private static final int REQUEST_LOCATION = 41;
+
+    /** Android's own location prompt, once: a "no" is kept, and Home settings > Weather can still ask again. */
+    private void askLocationOnce() {
+        SharedPreferences p = getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE);
+        if (p.getBoolean("location_asked", false)) return;
+        p.edit().putBoolean("location_asked", true).apply();
+        handler.post(() -> requestPermissions(new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION,
+                android.Manifest.permission.ACCESS_COARSE_LOCATION}, REQUEST_LOCATION));
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int request, String[] permissions, int[] results) {
+        super.onRequestPermissionsResult(request, permissions, results);
+        if (request != REQUEST_LOCATION || !TvLocation.allowed(this) || WeatherPlace.current(this) != null) return;
+        // Allowed: the weather line comes on now, for where the TV says it is.
+        weatherAuto = true;
+        weatherOn = getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE).getBoolean("show_weather", true);
+        startWeather();
+    }
+
     private void startWeather() {
         if (!weatherOn) return;
         Weather.Reading r = Weather.cached(this);
