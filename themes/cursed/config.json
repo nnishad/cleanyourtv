@@ -4,7 +4,7 @@
   "watch_row": true,
   "weather_auto": true,
   "couch_menus": true,
-  "hide_rows_idle_seconds": 60,
+  "hide_rows_idle_seconds": 180,
   "home_idle_clock_minutes": 0,
   "dock_apps": [
     "com.netflix.ninja",

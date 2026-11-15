@@ -213,7 +213,7 @@ The installer has already given the launcher permission to read that list (and o
 - **The gear** opens Home settings (backgrounds, rows, the grid and dock, motion, weather) and TV settings.
 - **Inputs** is the button at the top right, with the TV's HDMI inputs, Bluetooth and Network.
 - **Hold OK on an app** to move it, add it to the dock or see its info; **on a Keep watching card** to take the show off.
-- **Up from the dock** goes to Keep watching. After a minute of nothing the rows fade away and the picture takes over;
+- **Up from the dock** goes to Keep watching. After three minutes of nothing the rows fade away and the picture takes over;
   any button brings them back.
 
 ## Undo, and what keeps it safe
