@@ -65,7 +65,7 @@
             android:shadowRadius="4"
             android:singleLine="true"
             android:textColor="#FFFFFFFF"
-            android:textSize="@dimen/type_label" />
+            android:textSize="13.5sp" />
 
         <ProgressBar
             android:id="@+id/watchProgress"
